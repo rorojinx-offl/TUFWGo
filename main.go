@@ -2,12 +2,18 @@ package main
 
 import (
 	"TUFWGo/tui"
+
 	tea "github.com/charmbracelet/bubbletea"
 )
 
 func main() {
 	tabs := []string{"Home", "Settings", "Profile", "Help"}
-	tabContent := []string{"Welcome to the Home tab!", "Adjust your settings here.", "This is your profile.", "Here is some help information."}
+	tabContent := []*tui.Model{
+		{Items: []string{"Welcome to the Home tab!", "Here is some introductory content."}},
+		{Items: []string{"Adjust your preferences here.", "Change settings as needed."}},
+		{Items: []string{"View and edit your profile information.", "Manage your account details."}},
+		{Items: []string{"Find answers to common questions.", "Contact support if needed."}},
+	}
 
 	m := &tui.TabModel{
 		Tabs:       tabs,

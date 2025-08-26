@@ -1,8 +1,9 @@
 package tui
 
 import (
-	tea "github.com/charmbracelet/bubbletea"
 	"strings"
+
+	tea "github.com/charmbracelet/bubbletea"
 )
 
 const (
@@ -14,6 +15,10 @@ const (
 type Model struct {
 	Items  []string
 	Cursor int
+}
+
+type MenuSelected struct {
+	Item string
 }
 
 func (m *Model) Init() tea.Cmd { return nil }
@@ -38,6 +43,10 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				break
 			}
 			m.Cursor = (m.Cursor + 1) % len(m.Items)
+		case "enter":
+			return m, func() tea.Msg {
+				return MenuSelected{Item: m.Items[m.Cursor]} // send the selected item as a message
+			}
 		}
 	}
 	return m, nil

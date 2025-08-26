@@ -1,15 +1,17 @@
 package tui
 
 import (
+	"strings"
+
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
-	"strings"
 )
 
 type TabModel struct {
 	Tabs       []string
-	TabContent []string
+	TabContent []*Model
 	activeTab  int
+	selected   string
 }
 
 func (m *TabModel) Init() tea.Cmd {
@@ -28,7 +30,14 @@ func (m *TabModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "left":
 			m.activeTab = maximum(m.activeTab-1, 0)
 			return m, nil
+		default:
+			menu, cmd := m.TabContent[m.activeTab].Update(msg)
+			m.TabContent[m.activeTab] = menu.(*Model)
+			return m, cmd
 		}
+	case MenuSelected:
+		m.selected = msg.Item
+		return m, nil
 	}
 
 	return m, nil
@@ -82,7 +91,15 @@ func (m *TabModel) View() string {
 	row := lipgloss.JoinHorizontal(lipgloss.Top, renderedTabs...)
 	doc.WriteString(row)
 	doc.WriteString("\n")
-	doc.WriteString(windowStyle.Width(lipgloss.Width(row) - windowStyle.GetHorizontalFrameSize()).Render(m.TabContent[m.activeTab]))
+
+	content := ""
+	if m.selected != "" {
+		content = "You selected: " + m.selected
+	} else {
+		content = m.TabContent[m.activeTab].View()
+	}
+
+	doc.WriteString(windowStyle.Width(lipgloss.Width(row) - windowStyle.GetHorizontalFrameSize()).Render(content))
 	return docStyle.Render(doc.String())
 }
 
