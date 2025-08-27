@@ -12,6 +12,8 @@ type TabModel struct {
 	TabContent []*Model
 	activeTab  int
 	selected   string
+	Width      int
+	Height     int
 }
 
 func (m *TabModel) Init() tea.Cmd {
@@ -44,6 +46,41 @@ func (m *TabModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case MenuSelected:
 		m.selected = msg.Item
 		return m, nil
+	case tea.WindowSizeMsg:
+		// Track full terminal size
+		m.Width = msg.Width
+		m.Height = msg.Height
+
+		// Forward an adjusted size to the active inner menu so it fills the inner window.
+		if len(m.TabContent) > 0 && m.activeTab >= 0 && m.activeTab < len(m.TabContent) {
+			inW := m.Width - docStyle.GetHorizontalFrameSize()
+			if inW < 0 {
+				inW = 0
+			}
+			inH := m.Height - docStyle.GetVerticalFrameSize()
+			if inH < 0 {
+				inH = 0
+			}
+
+			// Tabs row is roughly a single line.
+			rowH := 1
+
+			innerW := inW - windowStyle.GetHorizontalFrameSize()
+			if innerW < 0 {
+				innerW = 0
+			}
+			innerH := inH - rowH - windowStyle.GetVerticalFrameSize()
+			if innerH < 0 {
+				innerH = 0
+			}
+
+			menu, cmd := m.TabContent[m.activeTab].Update(tea.WindowSizeMsg{
+				Width:  innerW,
+				Height: innerH,
+			})
+			m.TabContent[m.activeTab] = menu.(*Model)
+			return m, cmd
+		}
 	}
 
 	return m, nil
@@ -101,11 +138,36 @@ func (m *TabModel) View() string {
 	content := ""
 	if m.selected != "" {
 		content = "You selected: " + m.selected
-	} else {
+	} else if len(m.TabContent) > 0 && m.activeTab >= 0 && m.activeTab < len(m.TabContent) {
 		content = m.TabContent[m.activeTab].View()
 	}
 
-	doc.WriteString(windowStyle.Width(lipgloss.Width(row) - windowStyle.GetHorizontalFrameSize()).Render(content))
+	if m.Width > 0 && m.Height > 0 {
+		inW := m.Width - docStyle.GetHorizontalFrameSize()
+		if inW < 0 {
+			inW = 0
+		}
+		inH := m.Height - docStyle.GetVerticalFrameSize()
+		if inH < 0 {
+			inH = 0
+		}
+		rowH := lipgloss.Height(row)
+		winH := inH - rowH
+		if winH < 0 {
+			winH = 0
+		}
+
+		window := windowStyle.Width(inW).Height(winH).Render(content)
+
+		doc.WriteString(row)
+		doc.WriteString("\n")
+		doc.WriteString(window)
+		return docStyle.Render(doc.String())
+	}
+	window := windowStyle.Render(content)
+	doc.WriteString(row)
+	doc.WriteString("\n")
+	doc.WriteString(window)
 	return docStyle.Render(doc.String())
 }
 
