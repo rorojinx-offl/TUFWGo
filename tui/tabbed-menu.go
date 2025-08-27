@@ -25,9 +25,15 @@ func (m *TabModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "q":
 			return m, tea.Quit
 		case "right":
+			if m.selected != "" {
+				return m, nil
+			}
 			m.activeTab = minimum(m.activeTab+1, len(m.Tabs)-1)
 			return m, nil
 		case "left":
+			if m.selected != "" {
+				return m, nil
+			}
 			m.activeTab = maximum(m.activeTab-1, 0)
 			return m, nil
 		default:
