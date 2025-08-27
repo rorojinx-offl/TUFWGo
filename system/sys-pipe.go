@@ -14,8 +14,8 @@ func prepareCommand(cmdStr string) (string, error) {
 	return string(output), nil
 }
 
-func RunCommand() {
-	out, err := prepareCommand("ls -l ~/")
+func RunCommand(command string) {
+	out, err := prepareCommand(command)
 	if err != nil {
 		panic(err)
 	}

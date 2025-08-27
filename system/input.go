@@ -25,7 +25,13 @@ func Input() {
 	if err != nil {
 		panic(err)
 	}
-	fmt.Println(finalCommand)
+
+	ask := readRequired(reader, fmt.Sprintf("The command to be executed is: %s\nDo you want to continue (y/n)? ", finalCommand))
+	if ask != "y" {
+		return
+	}
+
+	RunCommand(finalCommand)
 }
 
 func readLine(reader *bufio.Reader, prompt string) string {

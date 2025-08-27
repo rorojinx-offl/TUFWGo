@@ -1,11 +1,8 @@
 package main
 
-import (
-	"TUFWGo/system"
-)
+import "TUFWGo/system"
 
 func main() {
 	//ui.RunTUI()
-	//system.Input()
-	system.RunCommand()
+	system.Input()
 }
