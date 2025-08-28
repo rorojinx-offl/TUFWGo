@@ -5,12 +5,12 @@ import (
 )
 
 func RunTUI() {
-	tabs := []string{"Home", "Settings", "Profile", "Help"}
+	tabs := []string{"General", "IPv6 Mode", "Profile Management", "Settings"}
 	tabContent := []*Model{
-		{Items: []string{"Welcome to the Home tab!", "Here is some introductory content."}},
-		{Items: []string{"Adjust your preferences here.", "Change settings as needed."}},
-		{Items: []string{"View and edit your profile information.", "Manage your account details."}},
-		{Items: []string{"Find answers to common questions.", "Contact support if needed."}},
+		{Items: []string{"List Current Rules", "Add Rule", "Remove Rule", "Toggle Rules"}},
+		{Items: []string{"Adjust your preferences here.", "Change settings as needed.", "Customize your experience.", "Save your changes."}},
+		{Items: []string{"View and edit your profile information.", "Manage your account details.", "Update your password.", "Set your privacy options."}},
+		{Items: []string{"Find answers to common questions.", "Contact support if needed.", "Explore tutorials and guides.", "Get the most out of the app."}},
 	}
 
 	m := &TabModel{

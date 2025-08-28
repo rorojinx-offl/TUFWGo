@@ -8,12 +8,14 @@ import (
 )
 
 type TabModel struct {
-	Tabs       []string
-	TabContent []*Model
-	activeTab  int
-	selected   string
-	Width      int
-	Height     int
+	Tabs        []string
+	TabContent  []*Model
+	EnumContent []*EnumModel
+	activeTab   int
+	selected    string
+	Width       int
+	Height      int
+	child       tea.Model
 }
 
 func (m *TabModel) Init() tea.Cmd {
@@ -21,6 +23,19 @@ func (m *TabModel) Init() tea.Cmd {
 }
 
 func (m *TabModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	if m.child != nil {
+		if km, ok := msg.(tea.KeyMsg); ok {
+			switch km.String() {
+			case "esc":
+				m.child = nil
+				return m, nil
+			}
+		}
+		next, cmd := m.child.Update(msg)
+		m.child = next
+		return m, cmd
+	}
+
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
 		switch keypress := msg.String(); keypress {
@@ -41,10 +56,17 @@ func (m *TabModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		default:
 			menu, cmd := m.TabContent[m.activeTab].Update(msg)
 			m.TabContent[m.activeTab] = menu.(*Model)
+
 			return m, cmd
 		}
 	case MenuSelected:
-		m.selected = msg.Item
+		switch msg.Item {
+		case "List Current Rules":
+			m.child = NewModel()
+			m.selected = ""
+		default:
+			m.selected = msg.Item
+		}
 		return m, nil
 	case tea.WindowSizeMsg:
 		// Track full terminal size
@@ -136,10 +158,19 @@ func (m *TabModel) View() string {
 	doc.WriteString("\n")
 
 	content := ""
-	if m.selected != "" {
-		content = "You selected: " + m.selected
+	/*if m.selected != "" {
+		//content = "You selected: " + m.selected
 	} else if len(m.TabContent) > 0 && m.activeTab >= 0 && m.activeTab < len(m.TabContent) {
 		content = m.TabContent[m.activeTab].View()
+	}*/
+
+	if m.child != nil {
+		content = m.child.View()
+	} else if m.selected != "" {
+		// optional: show a banner or a static screen for non-child actions
+		content = "You selected: " + m.selected
+	} else if len(m.TabContent) > 0 && m.activeTab >= 0 && m.activeTab < len(m.TabContent) {
+		content = m.TabContent[m.activeTab].View() // default: simple menu in this tab
 	}
 
 	if m.Width > 0 && m.Height > 0 {

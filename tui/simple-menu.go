@@ -1,15 +1,10 @@
 package tui
 
 import (
+	"github.com/charmbracelet/lipgloss"
 	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
-)
-
-const (
-	colorReset    = "\x1b[0m"
-	colorSelected = "\x1b[95m"
-	colorDim      = "\x1b[90m"
 )
 
 type Model struct {
@@ -20,6 +15,35 @@ type Model struct {
 type MenuSelected struct {
 	Item string
 }
+
+var (
+	// Normal menu item style
+	menuItemStyle = lipgloss.NewStyle().
+			Foreground(lipgloss.Color("250")). // light gray text
+			Background(lipgloss.Color("236")). // dark background
+			Padding(0, 2).                     // more padding = looks bigger
+			Margin(1, 0).                      // extra space between items
+			Width(40).                         // force a consistent width
+			Align(lipgloss.Center).            // center text
+			Bold(true)
+
+	// Highlighted menu item style
+	menuItemSelected = lipgloss.NewStyle().
+				Foreground(lipgloss.Color("229")). // bright yellow text
+				Background(lipgloss.Color("57")).  // blue background
+				Padding(0, 2).
+				Margin(1, 0).
+				Width(40).
+				Align(lipgloss.Center).
+				Bold(true)
+
+	// Instruction text
+	menuInstructionText = lipgloss.NewStyle().
+				Foreground(lipgloss.Color("244")).
+				Italic(true).
+				Align(lipgloss.Center).
+				Render("↑/↓ to navigate • Enter to select • q to quit")
+)
 
 func (m *Model) Init() tea.Cmd { return nil }
 
@@ -54,18 +78,12 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m *Model) View() string {
 	b := strings.Builder{}
-	b.WriteString("\n Use up/down to navigate, q to quit.\n\n")
+	b.WriteString("\n" + menuInstructionText + "\n\n\n\n")
 	for i, item := range m.Items {
 		if i == m.Cursor {
-			b.WriteString("  > ")
-			b.WriteString(colorSelected)
-			b.WriteString(item)
-			b.WriteString(colorReset)
+			b.WriteString(menuItemSelected.Render("  > " + item))
 		} else {
-			b.WriteString("    ")
-			b.WriteString(colorDim)
-			b.WriteString(item)
-			b.WriteString(colorReset)
+			b.WriteString(menuItemStyle.Render("    " + item))
 		}
 		b.WriteString("\n")
 	}
