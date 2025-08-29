@@ -188,6 +188,12 @@ func (m *TabModel) View() string {
 			winH = 0
 		}
 
+		if winH < 20 || inW < 50 { // tweak thresholds as you like
+			content = lipgloss.NewStyle().
+				Align(lipgloss.Center).
+				Render("Terminal too small — enlarge window and restart app to see tabs + content.")
+		}
+
 		window := windowStyle.Width(inW).Height(winH).Render(content)
 
 		doc.WriteString(row)
