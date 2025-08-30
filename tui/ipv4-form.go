@@ -28,6 +28,8 @@ var (
 	dropdownItem = lipgloss.NewStyle()
 	selectedItem = lipgloss.NewStyle().Bold(true).Underline(true)
 	sepStyle     = lipgloss.NewStyle().Foreground(muted)
+	disabledBox  = boxStyle.Copy().BorderForeground(muted)
+	disabledText = lipgloss.NewStyle().Foreground(muted)
 )
 
 // --- Simple dropdown component -----------------------------------------------
@@ -220,11 +222,23 @@ func (m formModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "q":
 			return m, func() tea.Msg { return FormCancelled{} }
 		case "tab", "esc":
-			if msg.String() == "tab" {
+			/*if msg.String() == "tab" {
 				m.focused = (m.focused + 1) % fCount
 			} else {
 				m.focused = (m.focused - 1 + fCount) % fCount
+			}*/
+
+			dir := 1
+			if msg.String() == "esc" {
+				dir = -1
 			}
+			for {
+				m.focused = (m.focused + focusIndex(dir) + fCount) % fCount
+				if !m.appLocked() || m.focused == fAction || m.focused == fApp || m.focused == fSubmit {
+					break
+				}
+			}
+
 			m.updateFocus()
 			return m, nil
 		case "enter":
@@ -239,24 +253,42 @@ func (m formModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case fAction:
 		m.action.Update(msg)
 	case fDirection:
+		if m.appLocked() {
+			return m, nil
+		}
 		m.direction.Update(msg)
 	case fInterface:
+		if m.appLocked() {
+			return m, nil
+		}
 		m.iface.Update(msg)
 	case fApp:
 		m.app.Update(msg)
 	case fFromIP:
+		if m.appLocked() {
+			return m, nil
+		}
 		var cmd tea.Cmd
 		m.fromIP, cmd = m.fromIP.Update(msg)
 		return m, cmd
 	case fToIP:
+		if m.appLocked() {
+			return m, nil
+		}
 		var cmd tea.Cmd
 		m.toIP, cmd = m.toIP.Update(msg)
 		return m, cmd
 	case fPort:
+		if m.appLocked() {
+			return m, nil
+		}
 		var cmd tea.Cmd
 		m.port, cmd = m.port.Update(msg)
 		return m, cmd
 	case fProtocol:
+		if m.appLocked() {
+			return m, nil
+		}
 		var cmd tea.Cmd
 		m.protocol, cmd = m.protocol.Update(msg)
 		return m, cmd
@@ -267,36 +299,68 @@ func (m formModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m *formModel) updateFocus() {
 	m.action.Focused = m.focused == fAction
-	m.direction.Focused = m.focused == fDirection
-	m.iface.Focused = m.focused == fInterface
+	m.direction.Focused = !m.appLocked() && m.focused == fDirection
+	m.iface.Focused = !m.appLocked() && m.focused == fInterface
 	m.app.Focused = m.focused == fApp
 
 	m.fromIP.Blur()
 	m.toIP.Blur()
 	m.port.Blur()
 	m.protocol.Blur()
-	switch m.focused {
-	case fFromIP:
-		m.fromIP.Focus()
-	case fToIP:
-		m.toIP.Focus()
-	case fPort:
-		m.port.Focus()
-	case fProtocol:
-		m.protocol.Focus()
+
+	if m.appLocked() {
+		switch m.focused {
+		case fFromIP:
+			m.fromIP.Focus()
+		case fToIP:
+			m.toIP.Focus()
+		case fPort:
+			m.port.Focus()
+		case fProtocol:
+			m.protocol.Focus()
+		}
+	}
+}
+
+func renderField(label string, body string, disabled bool) string {
+	if disabled {
+		return disabledBox.Render(labelStyle.Render(label) + "\n" + disabledText.Render(body))
+	} else {
+		return boxStyle.Render(labelStyle.Render(label) + "\n" + body)
 	}
 }
 
 func (m formModel) View() string {
 	// Layout: two columns if wide enough, otherwise single column
 	cols := []string{
-		m.action.View(),
+		/*m.action.View(),
 		m.direction.View(),
 		m.iface.View(),
 		boxStyle.Render(labelStyle.Render("From IP") + "\n" + m.fromIP.View()),
 		boxStyle.Render(labelStyle.Render("To IP") + "\n" + m.toIP.View()),
 		boxStyle.Render(labelStyle.Render("Port") + "\n" + m.port.View()),
 		boxStyle.Render(labelStyle.Render("Protocol") + "\n" + m.protocol.View()),
+		m.app.View(),*/
+
+		m.action.View(),
+		m.direction.View(),
+		m.iface.View(),
+		func() string {
+			if m.appLocked() {
+				return disabledBox.Render(m.direction.View())
+			}
+			return m.direction.View()
+		}(),
+		func() string {
+			if m.appLocked() {
+				return disabledBox.Render(m.iface.View())
+			}
+			return m.iface.View()
+		}(),
+		renderField("From IP", m.fromIP.View(), m.appLocked()),
+		renderField("To IP", m.toIP.View(), m.appLocked()),
+		renderField("Port", m.port.View(), m.appLocked()),
+		renderField("Protocol", m.protocol.View(), m.appLocked()),
 		m.app.View(),
 	}
 
@@ -396,4 +460,8 @@ func padRightForm(s string, w int) string {
 		return s
 	}
 	return s + strings.Repeat(" ", w-len([]rune(s)))
+}
+
+func (m formModel) appLocked() bool {
+	return m.app.Value() != "(none)"
 }
