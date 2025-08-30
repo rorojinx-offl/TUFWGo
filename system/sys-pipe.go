@@ -6,7 +6,7 @@ import (
 	"os/exec"
 )
 
-func prepareCommand(cmdStr string) (string, error, *bytes.Buffer) {
+func prepareCommand(cmdStr string) string {
 	cmd := exec.Command("bash", "-c", cmdStr)
 
 	var stderr bytes.Buffer
@@ -16,15 +16,12 @@ func prepareCommand(cmdStr string) (string, error, *bytes.Buffer) {
 	if err != nil {
 		fmt.Println("Command failed with:", err)
 		fmt.Println("stderr:", stderr.String())
-		return "", nil, nil
+		return ""
 	}
-	return string(output), nil, nil
+	return string(output)
 }
 
-func RunCommand(command string) (string, error, *bytes.Buffer) {
-	out, err, stderr := prepareCommand(command)
-	if err != nil {
-		return "", err, stderr
-	}
-	return out, nil, nil
+func RunCommand(command string) string {
+	out := prepareCommand(command)
+	return out
 }
