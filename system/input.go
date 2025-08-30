@@ -31,7 +31,10 @@ func Input() {
 		return
 	}
 
-	RunCommand(finalCommand)
+	err = RunCommand(finalCommand)
+	if err != nil {
+		fmt.Println("Error executing command:", err)
+	}
 }
 
 func readLine(reader *bufio.Reader, prompt string) string {

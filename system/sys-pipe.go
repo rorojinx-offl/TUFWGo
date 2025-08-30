@@ -14,10 +14,11 @@ func prepareCommand(cmdStr string) (string, error) {
 	return string(output), nil
 }
 
-func RunCommand(command string) {
+func RunCommand(command string) error {
 	out, err := prepareCommand(command)
 	if err != nil {
-		panic(err)
+		return err
 	}
 	fmt.Println(out)
+	return nil
 }
