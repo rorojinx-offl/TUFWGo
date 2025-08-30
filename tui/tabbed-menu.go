@@ -1,7 +1,9 @@
 package tui
 
 import (
+	"TUFWGo/ufw"
 	"strings"
+	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
@@ -16,7 +18,21 @@ type TabModel struct {
 	Width       int
 	Height      int
 	child       tea.Model
+	toast       string
+	toastUntil  time.Time
 }
+
+type confirmDeclined struct{ ReturnTo tea.Model }
+
+type confirmModel struct {
+	prompt   string
+	cmd      string
+	data     FormData
+	choice   int
+	returnTo tea.Model
+}
+
+type clearToast struct{}
 
 func (m *TabModel) Init() tea.Cmd {
 	return nil
@@ -41,9 +57,56 @@ func (m *TabModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case FormCancelled:
 			m.child = nil
 			return m, nil
-		case FormSubmitted:
-			m.child = nil
+		case FormConfirmation:
+			formStruct := child.Data
+			structPass := ufw.Form{
+				Action:     formStruct.Action,
+				Direction:  formStruct.Direction,
+				Interface:  formStruct.Interface,
+				FromIP:     formStruct.FromIP,
+				ToIP:       formStruct.ToIP,
+				Port:       formStruct.Port,
+				Protocol:   formStruct.Protocol,
+				AppProfile: formStruct.App,
+			}
+			var cmd string
+			if cmdCheck, err := structPass.ParseForm(); err != nil {
+				cmd = "Error: " + err.Error()
+				m.toast = cmd
+				m.toastUntil = time.Now().Add(5 * time.Second)
+				m.child = nil
+				return m, tea.Tick(time.Until(m.toastUntil), func(time.Time) tea.Msg { return clearToast{} })
+			} else {
+				cmd = cmdCheck
+			}
+			m.child = newConfirmModel("Are you sure you want to submit the following command?", cmd, formStruct, m.child)
 			return m, nil
+		case confirmDeclined:
+			m.child = child.ReturnTo
+			return m, nil
+
+		case FormSubmitted:
+			formStruct := child.Data
+			structPass := ufw.Form{
+				Action:     formStruct.Action,
+				Direction:  formStruct.Direction,
+				Interface:  formStruct.Interface,
+				FromIP:     formStruct.FromIP,
+				ToIP:       formStruct.ToIP,
+				Port:       formStruct.Port,
+				Protocol:   formStruct.Protocol,
+				AppProfile: formStruct.App,
+			}
+
+			if cmd, err := structPass.ParseForm(); err != nil {
+				m.toast = "Error: " + err.Error()
+			} else {
+				m.toast = "Successfully Parsed: " + cmd
+			}
+
+			m.toastUntil = time.Now().Add(5 * time.Second)
+			m.child = nil
+			return m, tea.Tick(time.Until(m.toastUntil), func(time.Time) tea.Msg { return clearToast{} })
 		}
 
 		next, cmd := m.child.Update(msg)
@@ -121,6 +184,9 @@ func (m *TabModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.TabContent[m.activeTab] = menu.(*Model)
 			return m, cmd
 		}
+	case clearToast:
+		m.toast = ""
+		return m, nil
 	}
 
 	return m, nil
@@ -217,13 +283,87 @@ func (m *TabModel) View() string {
 		doc.WriteString(row)
 		doc.WriteString("\n")
 		doc.WriteString(window)
+
+		if m.toast != "" && time.Now().Before(m.toastUntil) {
+			toastStyle := lipgloss.NewStyle().
+				MarginTop(1).
+				Padding(0, 1).
+				Bold(true)
+
+			toastStyle = toastStyle.Foreground(highlightColor)
+			doc.WriteString("\n")
+			doc.WriteString(toastStyle.Render(m.toast))
+		}
+
 		return docStyle.Render(doc.String())
 	}
 	window := windowStyle.Render(content)
 	doc.WriteString(row)
 	doc.WriteString("\n")
 	doc.WriteString(window)
+
 	return docStyle.Render(doc.String())
+}
+
+func newConfirmModel(prompt, cmd string, data FormData, returnTo tea.Model) *confirmModel {
+	return &confirmModel{
+		prompt:   prompt,
+		cmd:      cmd,
+		data:     data,
+		choice:   1,
+		returnTo: returnTo,
+	}
+}
+
+func (c *confirmModel) Init() tea.Cmd { return nil }
+
+func (c *confirmModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	switch msg := msg.(type) {
+	case tea.KeyMsg:
+		switch msg.String() {
+		case "left", "right":
+			if c.choice == 0 {
+				c.choice = 1
+			} else {
+				c.choice = 0
+			}
+			return c, nil
+		case "enter":
+			if c.choice == 0 {
+				return c, func() tea.Msg { return FormSubmitted{Data: c.data} }
+			}
+			return c, func() tea.Msg { return confirmDeclined{ReturnTo: c.returnTo} }
+		case "esc":
+			return c, func() tea.Msg { return confirmDeclined{ReturnTo: c.returnTo} }
+		}
+	}
+	return c, nil
+}
+
+func (c *confirmModel) View() string {
+	title := lipgloss.NewStyle().Bold(true).Render("Confirm Submission")
+	body := c.prompt + "\n\n" + lipgloss.NewStyle().Faint(true).Render(c.cmd)
+	yes := "[ Yes ]"
+	no := "[ No ]"
+
+	if c.choice == 0 {
+		yes = lipgloss.NewStyle().Bold(true).Render(yes)
+	} else {
+		no = lipgloss.NewStyle().Bold(true).Render(no)
+	}
+	buttons := lipgloss.JoinHorizontal(lipgloss.Top, yes+"  ", no)
+
+	box := lipgloss.NewStyle().
+		Border(lipgloss.RoundedBorder()).
+		BorderForeground(highlightColor).
+		Padding(1, 2).
+		Width(60)
+
+	content := strings.Join([]string{title, body, "", buttons}, "\n")
+	return lipgloss.Place(
+		0, 0,
+		lipgloss.Center, lipgloss.Center,
+		box.Render(content))
 }
 
 func maximum(a, b int) int {

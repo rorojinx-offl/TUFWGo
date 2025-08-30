@@ -4,14 +4,13 @@ import (
 	"bufio"
 	"bytes"
 	"fmt"
+	"github.com/charmbracelet/bubbles/textinput"
+	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/lipgloss"
 	"os/exec"
 	"regexp"
 	"sort"
 	"strings"
-
-	"github.com/charmbracelet/bubbles/textinput"
-	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
 )
 
 // --- Styling -----------------------------------------------------------------
@@ -48,7 +47,53 @@ type dropdown struct {
 }
 
 type FormCancelled struct{}
-type FormSubmitted struct{}
+type FormSubmitted struct{ Data FormData }
+type FormConfirmation struct{ Data FormData }
+
+type FormData struct {
+	Action    string
+	Direction string
+	Interface string
+	FromIP    string
+	ToIP      string
+	Port      string
+	Protocol  string
+	App       string
+}
+
+func (m formModel) dataCollection() FormData {
+	if m.appLocked() {
+		return FormData{
+			//Leave everything else blank/zeroed out; only populate action and app
+			Action: m.action.Value(),
+			App:    m.app.Value(),
+		}
+	}
+
+	var properDefaultDirection string
+	var properDefaultInterface string
+	if m.direction.Value() == "default" {
+		properDefaultDirection = ""
+	} else {
+		properDefaultDirection = m.direction.Value()
+	}
+	if m.iface.Value() == "default" {
+		properDefaultInterface = ""
+	} else {
+		properDefaultInterface = m.iface.Value()
+	}
+
+	return FormData{
+		Action:    m.action.Value(),
+		Direction: properDefaultDirection,
+		Interface: properDefaultInterface,
+		FromIP:    m.fromIP.Value(),
+		ToIP:      m.toIP.Value(),
+		Port:      m.port.Value(),
+		Protocol:  m.protocol.Value(),
+		App:       "",
+	}
+}
 
 func newDropdown(label string, options []string) dropdown {
 	return dropdown{Label: label, Options: options, Selected: 0, Open: false, Width: 28}
@@ -204,10 +249,10 @@ func initialFormModel() formModel {
 	m.port.Width = 20
 
 	m.protocol = textinput.New()
-	m.protocol.Placeholder = "tcp | udp | any"
+	m.protocol.Placeholder = "tcp | udp | all | tcp/udp | esp | ah | gre | icmp | ipv6"
 	m.protocol.Prompt = ""
 	m.protocol.CharLimit = 10
-	m.protocol.Width = 12
+	m.protocol.Width = 60
 
 	m.updateFocus()
 	return m
@@ -221,7 +266,7 @@ func (m formModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		switch msg.String() {
 		case "q":
 			return m, func() tea.Msg { return FormCancelled{} }
-		case "tab", "esc":
+		case "tab", "shift+tab":
 			/*if msg.String() == "tab" {
 				m.focused = (m.focused + 1) % fCount
 			} else {
@@ -229,7 +274,7 @@ func (m formModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}*/
 
 			dir := 1
-			if msg.String() == "esc" {
+			if msg.String() == "shift+tab" {
 				dir = -1
 			}
 			for {
@@ -243,7 +288,8 @@ func (m formModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, nil
 		case "enter":
 			if m.focused == fSubmit {
-				return m, func() tea.Msg { return FormSubmitted{} }
+				data := m.dataCollection()
+				return m, func() tea.Msg { return FormConfirmation{Data: data} }
 			}
 		}
 	}
@@ -364,7 +410,7 @@ func (m formModel) View() string {
 
 	var b strings.Builder
 	b.WriteString(focusStyle.Render("UFW Rule Form") + "\n")
-	b.WriteString(hintStyle.Render("Tab/Esc to move • Enter to open/close a dropdown • ↑/↓ to select • q to close • Enter on Submit to exit") + "\n")
+	b.WriteString(hintStyle.Render("Tab/Shift+Tab to move fields • Enter to open/close a dropdown • ↑/↓ to select • q to close • Enter on Submit to exit") + "\n")
 	b.WriteString(sepStyle.Render(strings.Repeat("─", 80)) + "\n\n")
 
 	// Grid

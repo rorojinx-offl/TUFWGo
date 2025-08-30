@@ -89,6 +89,9 @@ func (f *Form) ParseForm() (string, error) {
 	}
 
 	if f.Protocol != "" {
+		if f.Protocol != "tcp" && f.Protocol != "udp" && f.Protocol != "tcp/udp" && f.Protocol != "udp/tcp" && f.Protocol != "all" && f.Protocol != "esp" && f.Protocol != "ah" && f.Protocol != "gre" && f.Protocol != "icmp" && f.Protocol != "ipv6" {
+			return "", errors.New("protocol must be either 'tcp', 'udp', or 'tcp/udp', 'all', 'esp', 'ah', 'gre', 'icmp', or 'ipv6'")
+		}
 		_, err := fmt.Fprintf(&b, " proto %s", f.Protocol)
 		if err != nil {
 			return "", errors.New("unable to parse protocol")
