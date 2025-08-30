@@ -23,7 +23,7 @@ func termCheck() bool {
 		fmt.Println("Unable to get terminal size:", err)
 		return false
 	}
-	safeW, safeH := 236, 55
+	safeW, safeH := 209, 51
 	if w < safeW || h < safeH {
 		fmt.Printf("Your terminal size is too small (%dx%d). Please maximise terminal window!\n", w, h)
 		return false
