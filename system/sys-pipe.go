@@ -2,6 +2,7 @@ package system
 
 import (
 	"bytes"
+	"fmt"
 	"os/exec"
 )
 
@@ -13,7 +14,9 @@ func prepareCommand(cmdStr string) (string, error, *bytes.Buffer) {
 
 	output, err := cmd.Output()
 	if err != nil {
-		return "", err, &stderr
+		fmt.Println("Command failed with:", err)
+		fmt.Println("stderr:", stderr.String())
+		return "", nil, nil
 	}
 	return string(output), nil, nil
 }
