@@ -154,8 +154,8 @@ func (m *TabModel) View() string {
 	}
 
 	row := lipgloss.JoinHorizontal(lipgloss.Top, renderedTabs...)
-	doc.WriteString(row)
-	doc.WriteString("\n")
+	//doc.WriteString(row)
+	//doc.WriteString("\n")
 
 	content := ""
 	/*if m.selected != "" {
