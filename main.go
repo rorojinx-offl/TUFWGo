@@ -9,8 +9,8 @@ import (
 var skipTermCheck = flag.Bool("skip-term-check", false, "Skip the terminal size check")
 
 func main() {
-	//runTUIMode()
-	system.Input()
+	runTUIMode()
+	//system.Input()
 }
 
 func runTUIMode() {
