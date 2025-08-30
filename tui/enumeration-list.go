@@ -64,7 +64,7 @@ func (m EnumModel) View() string {
 
 	start, end := m.paginator.GetSliceBounds(len(m.items))
 	for _, item := range m.items[start:end] {
-		b.WriteString("  • " + item + "\n\n")
+		b.WriteString(item + "\n\n")
 	}
 	b.WriteString("  " + m.paginator.View())
 	b.WriteString("\n\n  ←/→ page • q: quit\n")
