@@ -33,7 +33,7 @@ var (
 // --- Simple dropdown component -----------------------------------------------
 // A compact, keyboard-only dropdown that mimics a select box.
 // Controls: Enter to open/confirm, ↑/↓ to navigate when open, Esc to close.
-// Tab / Shift+Tab to move focus handled by parent model.
+// Tab / Shift+Tab to move focus handled by parent formModel.
 
 type dropdown struct {
 	Label    string
@@ -44,6 +44,9 @@ type dropdown struct {
 	Width    int
 	Err      string
 }
+
+type FormCancelled struct{}
+type FormSubmitted struct{}
 
 func newDropdown(label string, options []string) dropdown {
 	return dropdown{Label: label, Options: options, Selected: 0, Open: false, Width: 28}
@@ -123,7 +126,7 @@ func (d *dropdown) Update(msg tea.Msg) tea.Cmd {
 	return nil
 }
 
-// --- Root form model ----------------------------------------------------------
+// --- Root form formModel ----------------------------------------------------------
 
 type focusIndex int
 
@@ -140,7 +143,7 @@ const (
 	fCount
 )
 
-type model struct {
+type formModel struct {
 	// Dropdowns
 	action    dropdown
 	direction dropdown
@@ -159,7 +162,7 @@ type model struct {
 	err     string
 }
 
-func initialModel() model {
+func initialFormModel() formModel {
 	// Developer-defined actions and directions
 	actions := []string{"allow", "deny", "reject", "limit"}
 	directions := []string{"default", "in", "out"}
@@ -170,9 +173,9 @@ func initialModel() model {
 	apps := []string{"(none)"}
 	apps = append(apps, listUFWApps()...)
 
-	// Initialize model
+	// Initialize formModel
 
-	m := model{
+	m := formModel{
 		action:    newDropdown("Action", actions),
 		direction: newDropdown("Direction", directions),
 		iface:     newDropdown("Interface", ifaces),
@@ -208,14 +211,14 @@ func initialModel() model {
 	return m
 }
 
-func (m model) Init() tea.Cmd { return textinput.Blink }
+func (m formModel) Init() tea.Cmd { return textinput.Blink }
 
-func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+func (m formModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
 		switch msg.String() {
 		case "q":
-			return m, tea.Quit
+			return m, func() tea.Msg { return FormCancelled{} }
 		case "tab", "esc":
 			if msg.String() == "tab" {
 				m.focused = (m.focused + 1) % fCount
@@ -226,7 +229,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, nil
 		case "enter":
 			if m.focused == fSubmit {
-				return m, tea.Quit // no-op submit for now
+				return m, func() tea.Msg { return FormSubmitted{} }
 			}
 		}
 	}
@@ -262,7 +265,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return m, nil
 }
 
-func (m *model) updateFocus() {
+func (m *formModel) updateFocus() {
 	m.action.Focused = m.focused == fAction
 	m.direction.Focused = m.focused == fDirection
 	m.iface.Focused = m.focused == fInterface
@@ -284,7 +287,7 @@ func (m *model) updateFocus() {
 	}
 }
 
-func (m model) View() string {
+func (m formModel) View() string {
 	// Layout: two columns if wide enough, otherwise single column
 	cols := []string{
 		m.action.View(),

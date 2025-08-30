@@ -24,13 +24,28 @@ func (m *TabModel) Init() tea.Cmd {
 
 func (m *TabModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	if m.child != nil {
-		if km, ok := msg.(tea.KeyMsg); ok {
+		/*if km, ok := msg.(tea.KeyMsg); ok {
 			switch km.String() {
 			case "esc":
 				m.child = nil
 				return m, nil
 			}
+		}*/
+
+		switch child := msg.(type) {
+		case tea.KeyMsg:
+			if child.String() == "esc" {
+				m.child = nil
+				return m, nil
+			}
+		case FormCancelled:
+			m.child = nil
+			return m, nil
+		case FormSubmitted:
+			m.child = nil
+			return m, nil
 		}
+
 		next, cmd := m.child.Update(msg)
 		m.child = next
 		return m, cmd
@@ -63,6 +78,9 @@ func (m *TabModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		switch msg.Item {
 		case "List Current Rules":
 			m.child = NewModel()
+			m.selected = ""
+		case "Add Rule":
+			m.child = initialFormModel()
 			m.selected = ""
 		default:
 			m.selected = msg.Item
