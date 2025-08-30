@@ -78,7 +78,7 @@ type ufwRule struct {
 }
 
 func readUFWStatus() ([]string, error) {
-	stdout := system.RunCommand("ufw status")
+	stdout := system.RunCommand("ufw status | grep -v \"(v6)\"")
 	rules := parseUFWStatus(stdout)
 	if len(rules) == 0 {
 		return []string{"No rules found."}, nil
