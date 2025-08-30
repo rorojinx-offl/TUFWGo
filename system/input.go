@@ -31,7 +31,7 @@ func Input() {
 		return
 	}
 
-	err = RunCommand(finalCommand)
+	_, err, _ = RunCommand(finalCommand)
 	if err != nil {
 		fmt.Println("Error executing command:", err)
 	}
