@@ -58,9 +58,9 @@ func (m EnumModel) View() string {
 	b.WriteString("\n  Active UFW Rules\n\n")
 
 	header := padRight("To", colToWidth) + padRight("Action", colActionWidth) + "From"
-	sep := " " + strings.Repeat("-", colToWidth+colActionWidth+colFromWidth)
+	//sep := " " + strings.Repeat("-", colToWidth+colActionWidth+colFromWidth)
 	b.WriteString(header + "\n")
-	b.WriteString(sep + "\n")
+	//b.WriteString(sep + "\n")
 
 	start, end := m.paginator.GetSliceBounds(len(m.items))
 	for _, item := range m.items[start:end] {
