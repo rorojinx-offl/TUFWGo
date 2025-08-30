@@ -1,7 +1,8 @@
 package tui
 
 import (
-	"fmt"
+	"TUFWGo/system"
+	"bufio"
 	"strings"
 
 	"github.com/charmbracelet/bubbles/paginator"
@@ -10,10 +11,11 @@ import (
 )
 
 func NewModel() EnumModel {
-	var items []string
-	for i := 1; i < 51; i++ {
-		text := fmt.Sprintf("Item %d", i)
-		items = append(items, text)
+	items, err := readUFWStatus()
+	if err != nil && len(items) == 0 {
+		lipgloss.NewStyle().
+			Align(lipgloss.Center).
+			Render("No UFW rules found or an error occurred.")
 	}
 
 	p := paginator.New()
@@ -53,20 +55,110 @@ func (m EnumModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m EnumModel) View() string {
 	var b strings.Builder
-	b.WriteString("\n  Paginator Example\n\n")
+	b.WriteString("\n  Active UFW Rules\n\n")
+
+	header := padRight("To", colToWidth) + padRight("Action", colActionWidth) + "From"
+	sep := " " + strings.Repeat("-", colToWidth+colActionWidth+colFromWidth)
+	b.WriteString(header + "\n")
+	b.WriteString(sep + "\n")
+
 	start, end := m.paginator.GetSliceBounds(len(m.items))
 	for _, item := range m.items[start:end] {
 		b.WriteString("  • " + item + "\n\n")
 	}
 	b.WriteString("  " + m.paginator.View())
-	b.WriteString("\n\n  h/l ←/→ page • q: quit\n")
+	b.WriteString("\n\n  ←/→ page • q: quit\n")
 	return b.String()
 }
 
-/*func readUFWStatus() ([]string, error) {
-	cmd, err, _ := system.RunCommand("ufw status")
-	if err != nil {
-		return nil, fmt.Errorf("failed to run ufw ")
+type ufwRule struct {
+	To     string
+	Action string
+	From   string
+}
+
+func readUFWStatus() ([]string, error) {
+	stdout := system.RunCommand("ufw status")
+	rules := parseUFWStatus(stdout)
+	if len(rules) == 0 {
+		return []string{"No rules found."}, nil
 	}
 
-}*/
+	items := make([]string, 0, len(rules))
+	for _, r := range rules {
+		items = append(items, formatRule(r))
+	}
+	return items, nil
+}
+
+func parseUFWStatus(stdout string) []ufwRule {
+	sc := bufio.NewScanner(strings.NewReader(stdout))
+	foundCols := false
+	rules := []ufwRule{}
+
+	for sc.Scan() {
+		line := strings.TrimSpace(sc.Text())
+		if line == "" {
+			continue
+		}
+
+		if !foundCols {
+			if strings.HasPrefix(line, "To") && strings.Contains(line, "Action") && strings.Contains(line, "From") {
+				foundCols = true
+			}
+			continue
+		}
+
+		if allDashes(line) {
+			continue
+		}
+
+		fields := splitColumns(line)
+		if len(fields) < 3 {
+			continue
+		}
+
+		rules = append(rules, ufwRule{
+			To:     fields[0],
+			Action: fields[1],
+			From:   strings.Join(fields[2:], " "),
+		})
+	}
+	return rules
+}
+
+func allDashes(s string) bool {
+	for _, r := range s {
+		if r != '-' && r != '—' {
+			return false
+		}
+	}
+	return len(s) > 0
+}
+
+func splitColumns(s string) []string {
+	// split on runs of 2+ spaces so simple names like "Anywhere" don't get split char-by-char
+	parts := []string{}
+	for _, p := range strings.FieldsFunc(s, func(r rune) bool { return r == ' ' || r == '\t' }) {
+		parts = append(parts, p)
+	}
+	// The above FieldsFunc collapses all whitespace, which is fine because columns are aligned.
+	return parts
+}
+
+const (
+	colToWidth     = 24
+	colActionWidth = 12
+	colFromWidth   = 24
+)
+
+func padRight(s string, width int) string {
+	if len(s) >= width {
+		return s
+	}
+	return s + strings.Repeat(" ", width-len(s))
+}
+
+func formatRule(r ufwRule) string {
+	return " " + padRight(r.To, colToWidth) + padRight(r.Action, colActionWidth) + r.From
+}

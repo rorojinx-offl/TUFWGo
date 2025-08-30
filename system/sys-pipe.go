@@ -14,7 +14,6 @@ func prepareCommand(cmdStr string) string {
 
 	output, err := cmd.Output()
 	if err != nil {
-		fmt.Println("Command failed with:", err)
 		fmt.Println("stderr:", stderr.String())
 		return ""
 	}
