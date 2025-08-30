@@ -308,7 +308,7 @@ func (m *formModel) updateFocus() {
 	m.port.Blur()
 	m.protocol.Blur()
 
-	if m.appLocked() {
+	if !m.appLocked() {
 		switch m.focused {
 		case fFromIP:
 			m.fromIP.Focus()
@@ -343,8 +343,6 @@ func (m formModel) View() string {
 		m.app.View(),*/
 
 		m.action.View(),
-		m.direction.View(),
-		m.iface.View(),
 		func() string {
 			if m.appLocked() {
 				return disabledBox.Render(m.direction.View())
