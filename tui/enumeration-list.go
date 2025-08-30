@@ -62,3 +62,11 @@ func (m EnumModel) View() string {
 	b.WriteString("\n\n  h/l ←/→ page • q: quit\n")
 	return b.String()
 }
+
+/*func readUFWStatus() ([]string, error) {
+	cmd, err, _ := system.RunCommand("ufw status")
+	if err != nil {
+		return nil, fmt.Errorf("failed to run ufw ")
+	}
+
+}*/
