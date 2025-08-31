@@ -79,7 +79,12 @@ func (m *TabModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			} else {
 				cmd = cmdCheck
 			}
-			m.child = newConfirmModel("Are you sure you want to submit the following command?", cmd, formStruct, m.child)
+			if structPass.AppProfile == "" {
+				m.child = newConfirmModel("Are you sure you want to submit the following command?", cmd, formStruct, m.child)
+			} else {
+				// Warn user about automatic IPv6 rule addition
+				m.child = newConfirmModel("Are you sure you want to submit the following command?\n\nNote: Directly configuring an app profile will automatically add an IPv6 rule as well!", cmd, formStruct, m.child)
+			}
 			return m, nil
 		case confirmDeclined:
 			m.child = child.ReturnTo

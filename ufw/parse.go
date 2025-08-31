@@ -27,7 +27,7 @@ func (f *Form) ParseForm() (string, error) {
 			return "", errors.New("action must be either 'allow' or 'deny'")
 		}
 		_, err := fmt.Fprintf(&b, "%s \"%s\"", f.Action, f.AppProfile)
-		fmt.Println("WARNING: Directly configuring an app profile will automatically add an IPv6 rule as well!")
+		//fmt.Println("WARNING: Directly configuring an app profile will automatically add an IPv6 rule as well!")
 		if err != nil {
 			return "", errors.New("unable to parse app profile")
 		}
