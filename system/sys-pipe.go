@@ -2,11 +2,12 @@ package system
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"os/exec"
 )
 
-func prepareCommand(cmdStr string) string {
+func prepareCommand(cmdStr string) (string, error) {
 	cmd := exec.Command("bash", "-c", cmdStr)
 
 	var stderr bytes.Buffer
@@ -14,13 +15,15 @@ func prepareCommand(cmdStr string) string {
 
 	output, err := cmd.Output()
 	if err != nil {
-		fmt.Println("stderr:", stderr.String())
-		return ""
+		return "", errors.New(fmt.Sprint("stderr:", stderr.String()))
 	}
-	return string(output)
+	return string(output), nil
 }
 
-func RunCommand(command string) string {
-	out := prepareCommand(command)
-	return out
+func RunCommand(command string) (string, error) {
+	out, err := prepareCommand(command)
+	if err != nil {
+		return "", err
+	}
+	return out, nil
 }
