@@ -31,7 +31,7 @@ func Input() {
 		return
 	}
 
-	_ = RunCommand(finalCommand)
+	_, err = RunCommand(finalCommand)
 }
 
 func readLine(reader *bufio.Reader, prompt string) string {
