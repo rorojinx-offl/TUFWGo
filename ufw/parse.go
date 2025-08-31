@@ -34,8 +34,8 @@ func (f *Form) ParseForm() (string, error) {
 		return b.String(), nil
 	}
 
-	if f.Action != "allow" && f.Action != "deny" {
-		return "", errors.New("action must be either 'allow' or 'deny'")
+	if f.Action != "allow" && f.Action != "deny" && f.Action != "reject" && f.Action != "limit" {
+		return "", errors.New("action must be either 'allow', 'deny', 'reject', or 'limit'")
 	}
 
 	b.WriteString(f.Action)
