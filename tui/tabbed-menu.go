@@ -20,6 +20,7 @@ type TabModel struct {
 	child       tea.Model
 	toast       string
 	toastUntil  time.Time
+	cmd         string
 }
 
 type confirmDeclined struct{ ReturnTo tea.Model }
@@ -32,6 +33,18 @@ type confirmModel struct {
 	returnTo tea.Model
 }
 
+type errorBoxModel struct {
+	prompt   string
+	stderr   string
+	returnTo tea.Model
+}
+
+type successBoxModel struct {
+	prompt   string
+	cmd      string
+	returnTo tea.Model
+}
+
 type clearToast struct{}
 
 func (m *TabModel) Init() tea.Cmd {
@@ -40,14 +53,6 @@ func (m *TabModel) Init() tea.Cmd {
 
 func (m *TabModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	if m.child != nil {
-		/*if km, ok := msg.(tea.KeyMsg); ok {
-			switch km.String() {
-			case "esc":
-				m.child = nil
-				return m, nil
-			}
-		}*/
-
 		switch child := msg.(type) {
 		case tea.KeyMsg:
 			if child.String() == "esc" {
@@ -71,13 +76,11 @@ func (m *TabModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 			var cmd string
 			if cmdCheck, err := structPass.ParseForm(); err != nil {
-				cmd = "Error: " + err.Error()
-				m.toast = cmd
-				m.toastUntil = time.Now().Add(5 * time.Second)
-				m.child = nil
-				return m, tea.Tick(time.Until(m.toastUntil), func(time.Time) tea.Msg { return clearToast{} })
+				m.child = newErrorBoxModel("There was an error parsing your input:", err.Error(), m.child)
+				return m, nil
 			} else {
 				cmd = cmdCheck
+				m.cmd = cmd
 			}
 			if structPass.AppProfile == "" {
 				m.child = newConfirmModel("Are you sure you want to submit the following command?", cmd, formStruct, m.child)
@@ -91,26 +94,8 @@ func (m *TabModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, nil
 
 		case FormSubmitted:
-			formStruct := child.Data
-			structPass := ufw.Form{
-				Action:     formStruct.Action,
-				Direction:  formStruct.Direction,
-				Interface:  formStruct.Interface,
-				FromIP:     formStruct.FromIP,
-				ToIP:       formStruct.ToIP,
-				Port:       formStruct.Port,
-				Protocol:   formStruct.Protocol,
-				AppProfile: formStruct.App,
-			}
-
-			if cmd, err := structPass.ParseForm(); err != nil {
-				m.toast = "Error: " + err.Error()
-			} else {
-				m.toast = "Successfully Parsed: " + cmd
-			}
-
+			m.child = newSuccessBoxModel("Successfully parsed the following command:", m.cmd, nil)
 			m.toastUntil = time.Now().Add(5 * time.Second)
-			m.child = nil
 			return m, tea.Tick(time.Until(m.toastUntil), func(time.Time) tea.Msg { return clearToast{} })
 		}
 
@@ -189,9 +174,6 @@ func (m *TabModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.TabContent[m.activeTab] = menu.(*Model)
 			return m, cmd
 		}
-	case clearToast:
-		m.toast = ""
-		return m, nil
 	}
 
 	return m, nil
@@ -243,15 +225,8 @@ func (m *TabModel) View() string {
 	}
 
 	row := lipgloss.JoinHorizontal(lipgloss.Top, renderedTabs...)
-	//doc.WriteString(row)
-	//doc.WriteString("\n")
 
 	content := ""
-	/*if m.selected != "" {
-		//content = "You selected: " + m.selected
-	} else if len(m.TabContent) > 0 && m.activeTab >= 0 && m.activeTab < len(m.TabContent) {
-		content = m.TabContent[m.activeTab].View()
-	}*/
 
 	if m.child != nil {
 		content = m.child.View()
@@ -288,17 +263,6 @@ func (m *TabModel) View() string {
 		doc.WriteString(row)
 		doc.WriteString("\n")
 		doc.WriteString(window)
-
-		if m.toast != "" && time.Now().Before(m.toastUntil) {
-			toastStyle := lipgloss.NewStyle().
-				MarginTop(1).
-				Padding(0, 1).
-				Bold(true)
-
-			toastStyle = toastStyle.Foreground(highlightColor)
-			doc.WriteString("\n")
-			doc.WriteString(toastStyle.Render(m.toast))
-		}
 
 		return docStyle.Render(doc.String())
 	}
@@ -352,9 +316,9 @@ func (c *confirmModel) View() string {
 	no := "[ No ]"
 
 	if c.choice == 0 {
-		yes = lipgloss.NewStyle().Bold(true).Render(yes)
+		yes = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("#35fc03")).Render(yes)
 	} else {
-		no = lipgloss.NewStyle().Bold(true).Render(no)
+		no = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("#fc0303")).Render(no)
 	}
 	buttons := lipgloss.JoinHorizontal(lipgloss.Top, yes+"  ", no)
 
@@ -383,4 +347,85 @@ func minimum(a, b int) int {
 		return a
 	}
 	return b
+}
+
+func newErrorBoxModel(prompt, stderr string, returnTo tea.Model) *errorBoxModel {
+	return &errorBoxModel{
+		prompt:   prompt,
+		stderr:   stderr,
+		returnTo: returnTo,
+	}
+}
+
+func (e *errorBoxModel) Init() tea.Cmd { return nil }
+
+func (e *errorBoxModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	switch msg := msg.(type) {
+	case tea.KeyMsg:
+		switch msg.String() {
+		case "enter", "esc":
+			return e.returnTo, nil
+		}
+	}
+	return e, nil
+}
+
+func (e *errorBoxModel) View() string {
+	title := lipgloss.NewStyle().Bold(true).Render("Error Parsing Form")
+	body := e.prompt + "\n\n" + lipgloss.NewStyle().Faint(true).Render(e.stderr)
+	back := "[ Back ]"
+	back = lipgloss.NewStyle().Bold(true).Render(back)
+	button := lipgloss.JoinHorizontal(lipgloss.Top, back)
+
+	box := lipgloss.NewStyle().
+		Border(lipgloss.RoundedBorder()).
+		BorderForeground(highlightColor).
+		Padding(1, 2).
+		Width(60)
+
+	content := strings.Join([]string{title, body, "", button}, "\n")
+	return lipgloss.Place(
+		0, 0,
+		lipgloss.Center, lipgloss.Center,
+		box.Render(content))
+
+}
+
+func newSuccessBoxModel(prompt, cmd string, returnTo tea.Model) *successBoxModel {
+	return &successBoxModel{
+		prompt:   prompt,
+		cmd:      cmd,
+		returnTo: returnTo,
+	}
+}
+
+func (s *successBoxModel) Init() tea.Cmd { return nil }
+
+func (s *successBoxModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	switch msg := msg.(type) {
+	case clearToast:
+		return s.returnTo, nil
+	case tea.KeyMsg:
+		switch msg.String() {
+		case "enter", "esc":
+			return s.returnTo, nil
+		}
+	}
+	return s, nil
+}
+
+func (s *successBoxModel) View() string {
+	title := lipgloss.NewStyle().Bold(true).Render("Successfully Parsed")
+	body := s.prompt + "\n\n" + lipgloss.NewStyle().Faint(true).Render(s.cmd)
+	box := lipgloss.NewStyle().
+		Border(lipgloss.RoundedBorder()).
+		BorderForeground(highlightColor).
+		Padding(1, 2).
+		Width(60)
+	successContent := strings.Join([]string{title, body}, "\n")
+	return lipgloss.Place(
+		0, 0,
+		lipgloss.Center, lipgloss.Center,
+		box.Render(successContent))
+
 }
