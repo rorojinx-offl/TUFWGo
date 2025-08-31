@@ -4,13 +4,14 @@ import (
 	"bufio"
 	"bytes"
 	"fmt"
-	"github.com/charmbracelet/bubbles/textinput"
-	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
 	"os/exec"
 	"regexp"
 	"sort"
 	"strings"
+
+	"github.com/charmbracelet/bubbles/textinput"
+	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/lipgloss"
 )
 
 // --- Styling -----------------------------------------------------------------
@@ -267,12 +268,6 @@ func (m formModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "q":
 			return m, func() tea.Msg { return FormCancelled{} }
 		case "tab", "shift+tab":
-			/*if msg.String() == "tab" {
-				m.focused = (m.focused + 1) % fCount
-			} else {
-				m.focused = (m.focused - 1 + fCount) % fCount
-			}*/
-
 			dir := 1
 			if msg.String() == "shift+tab" {
 				dir = -1
@@ -410,7 +405,7 @@ func (m formModel) View() string {
 
 	var b strings.Builder
 	b.WriteString(focusStyle.Render("UFW Rule Form") + "\n")
-	b.WriteString(hintStyle.Render("Tab/Shift+Tab to move fields • Enter to open/close a dropdown • ↑/↓ to select • q to close • Enter on Submit to exit") + "\n")
+	b.WriteString(hintStyle.Render("Tab/Shift+Tab to move fields • Enter to open/close a dropdown • ↑/↓ to select • Esc to close • Enter on Submit to exit") + "\n")
 	b.WriteString(sepStyle.Render(strings.Repeat("─", 80)) + "\n\n")
 
 	// Grid
