@@ -3,6 +3,7 @@ package tui
 import (
 	"TUFWGo/system"
 	"bufio"
+	"regexp"
 	"strings"
 
 	"github.com/charmbracelet/bubbles/paginator"
@@ -136,14 +137,21 @@ func allDashes(s string) bool {
 	return len(s) > 0
 }
 
+var colSplit = regexp.MustCompile(`\s{2,}`)
+
 func splitColumns(s string) []string {
-	// split on runs of 2+ spaces so simple names like "Anywhere" don't get split char-by-char
+	/* split on runs of 2+ spaces so simple names like "Anywhere" don't get split char-by-char
 	parts := []string{}
 	for _, p := range strings.FieldsFunc(s, func(r rune) bool { return r == ' ' || r == '\t' }) {
 		parts = append(parts, p)
 	}
 	// The above FieldsFunc collapses all whitespace, which is fine because columns are aligned.
-	return parts
+	return parts*/
+	s = strings.TrimSpace(s)
+	if s == "" {
+		return nil
+	}
+	return colSplit.Split(s, -1)
 }
 
 const (
