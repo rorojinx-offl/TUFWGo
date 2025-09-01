@@ -20,7 +20,6 @@ func NewModel() EnumModel {
 	}
 
 	p := paginator.New()
-	//p.Type = paginator.Dots
 	p.PerPage = 10
 	p.ActiveDot = lipgloss.NewStyle().Foreground(lipgloss.AdaptiveColor{Light: "235", Dark: "252"}).Render("•")
 	p.InactiveDot = lipgloss.NewStyle().Foreground(lipgloss.AdaptiveColor{Light: "250", Dark: "238"}).Render("•")
@@ -59,9 +58,7 @@ func (m EnumModel) View() string {
 	b.WriteString("\n  Active UFW Rules\n\n")
 
 	header := padRight("To", colToWidth) + padRight("Action", colActionWidth) + "From"
-	//sep := " " + strings.Repeat("-", colToWidth+colActionWidth+colFromWidth)
 	b.WriteString(header + "\n")
-	//b.WriteString(sep + "\n")
 
 	start, end := m.paginator.GetSliceBounds(len(m.items))
 	for _, item := range m.items[start:end] {
@@ -140,13 +137,6 @@ func allDashes(s string) bool {
 var colSplit = regexp.MustCompile(`\s{2,}`)
 
 func splitColumns(s string) []string {
-	/* split on runs of 2+ spaces so simple names like "Anywhere" don't get split char-by-char
-	parts := []string{}
-	for _, p := range strings.FieldsFunc(s, func(r rune) bool { return r == ' ' || r == '\t' }) {
-		parts = append(parts, p)
-	}
-	// The above FieldsFunc collapses all whitespace, which is fine because columns are aligned.
-	return parts*/
 	s = strings.TrimSpace(s)
 	if s == "" {
 		return nil
