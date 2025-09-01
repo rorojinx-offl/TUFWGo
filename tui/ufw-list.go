@@ -16,7 +16,7 @@ func NewModel() EnumModel {
 	if err != nil && len(items) == 0 {
 		lipgloss.NewStyle().
 			Align(lipgloss.Center).
-			Render("No UFW rules found or an error occurred.")
+			Render("No UFW rules found/an error occurred.")
 	}
 
 	p := paginator.New()
