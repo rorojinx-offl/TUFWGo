@@ -60,6 +60,12 @@ func (m *TabModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.child = nil
 				return m, nil
 			}
+			if child.String() == "r" {
+				if _, ok := m.child.(EnumModel); ok {
+					m.child = NewModel()
+					return m, nil
+				}
+			}
 		case FormCancelled:
 			m.child = nil
 			return m, nil
