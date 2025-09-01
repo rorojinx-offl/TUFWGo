@@ -1,6 +1,7 @@
 package tui
 
 import (
+	"TUFWGo/system"
 	"TUFWGo/ufw"
 	"strings"
 	"time"
@@ -94,7 +95,13 @@ func (m *TabModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, nil
 
 		case FormSubmitted:
-			m.child = newSuccessBoxModel("Successfully parsed the following command:", m.cmd, nil)
+			_, err := system.RunCommand(m.cmd)
+			if err != nil {
+				m.child = newErrorBoxModel("There was an error executing your command!", err.Error(), m.child)
+				return m, nil
+			}
+			// Show success message for 5 seconds
+			m.child = newSuccessBoxModel("UFW successfully added the following rule:", m.cmd, nil)
 			m.toastUntil = time.Now().Add(5 * time.Second)
 			return m, tea.Tick(time.Until(m.toastUntil), func(time.Time) tea.Msg { return clearToast{} })
 		}
@@ -371,7 +378,7 @@ func (e *errorBoxModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (e *errorBoxModel) View() string {
-	title := lipgloss.NewStyle().Bold(true).Render("Error Parsing Form")
+	title := lipgloss.NewStyle().Bold(true).Render("Error!")
 	body := e.prompt + "\n\n" + lipgloss.NewStyle().Faint(true).Render(e.stderr)
 	back := "[ Back ]"
 	back = lipgloss.NewStyle().Bold(true).Render(back)
