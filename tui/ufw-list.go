@@ -47,6 +47,8 @@ func (m EnumModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		switch msg.String() {
 		case "q", "esc", "ctrl+c":
 			return m, tea.Quit
+		case "r":
+			NewModel()
 		}
 	}
 	m.paginator, cmd = m.paginator.Update(msg)
