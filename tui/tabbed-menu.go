@@ -148,6 +148,9 @@ func (m *TabModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "Add Rule":
 			m.child = initialFormModel()
 			m.selected = ""
+		case "Remove Rule":
+			m.child = DeleteList()
+			m.selected = ""
 		default:
 			m.selected = msg.Item
 		}
