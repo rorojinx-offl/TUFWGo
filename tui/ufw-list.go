@@ -67,7 +67,7 @@ func (m EnumModel) View() string {
 		b.WriteString(item + "\n\n")
 	}
 	b.WriteString("  " + m.paginator.View())
-	b.WriteString("\n\n  ←/→ page • r reload • esc: back\n")
+	b.WriteString("\n\n  ←/→ page • r: reload • esc: back\n")
 	return b.String()
 }
 
