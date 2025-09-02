@@ -100,7 +100,7 @@ func parseUFWStatusForDeletion(stdout string) []ufwRuleWithNumbering {
 		}
 
 		if !foundCols {
-			if strings.HasPrefix(line, " ") && strings.Contains(line, "To") && strings.Contains(line, "Action") && strings.Contains(line, "From") {
+			if strings.HasPrefix(line, "") && strings.Contains(line, "To") && strings.Contains(line, "Action") && strings.Contains(line, "From") {
 				foundCols = true
 			}
 			continue
