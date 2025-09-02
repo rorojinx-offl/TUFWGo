@@ -311,11 +311,13 @@ func (m *TabModel) View() string {
 			winH = 0
 		}
 
+		var sshWarning string
 		if SSHActive { // tweak thresholds as you like
-			content = lipgloss.NewStyle().
+			sshWarning = lipgloss.NewStyle().
 				Align(lipgloss.Center).
 				Render("SSH Mode Active!!!")
 		}
+		content = content + "\n" + sshWarning
 
 		window := windowStyle.Width(inW).Height(winH).Render(content)
 
