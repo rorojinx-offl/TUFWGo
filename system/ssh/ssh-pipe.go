@@ -1,22 +1,22 @@
 package ssh
 
 import (
-	"TUFWGo/tui"
 	"bufio"
 	"context"
 	"errors"
 	"fmt"
-	"github.com/charmbracelet/x/term"
-	"golang.org/x/crypto/ssh"
-	"golang.org/x/crypto/ssh/knownhosts"
 	"net"
 	"os"
 	"strings"
 	"syscall"
 	"time"
+
+	"github.com/charmbracelet/x/term"
+	"golang.org/x/crypto/ssh"
+	"golang.org/x/crypto/ssh/knownhosts"
 )
 
-func Connect(host, user string, port int) {
+func Connect(host, user string, port int) (*ssh.Client, error) {
 	khPath := findKnownHostsPath()
 	client, err := connectWithKnownHosts(
 		context.Background(),
@@ -35,15 +35,14 @@ func Connect(host, user string, port int) {
 		},
 	)
 	if err != nil {
-		panic(fmt.Sprint("Connection error: ", err))
+		return nil, errors.New(fmt.Sprint("Connection error: ", err))
 	}
 	if client == nil {
 		panic("No SSH client returned")
 	}
 	defer client.Close()
 	fmt.Println("SSH connection succeeded")
-	tui.SSHActive = true
-	tui.RunTUI()
+	return client, nil
 }
 
 func connectWithKnownHosts(
