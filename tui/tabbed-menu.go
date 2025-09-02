@@ -2,6 +2,7 @@ package tui
 
 import (
 	"TUFWGo/system/local"
+	"TUFWGo/system/ssh"
 	"TUFWGo/ufw"
 	"strconv"
 	"strings"
@@ -311,10 +312,10 @@ func (m *TabModel) View() string {
 			winH = 0
 		}
 
-		if winH < 20 || inW < 50 { // tweak thresholds as you like
+		if ssh.SSHActive { // tweak thresholds as you like
 			content = lipgloss.NewStyle().
 				Align(lipgloss.Center).
-				Render("Terminal too small — enlarge window and restart app to see tabs + content.")
+				Render("SSH Mode Active!!!")
 		}
 
 		window := windowStyle.Width(inW).Height(winH).Render(content)
