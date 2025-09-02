@@ -2,7 +2,6 @@ package tui
 
 import (
 	"TUFWGo/system/local"
-	"TUFWGo/system/ssh"
 	"TUFWGo/ufw"
 	"strconv"
 	"strings"
@@ -312,7 +311,7 @@ func (m *TabModel) View() string {
 			winH = 0
 		}
 
-		if ssh.SSHActive { // tweak thresholds as you like
+		if SSHActive { // tweak thresholds as you like
 			content = lipgloss.NewStyle().
 				Align(lipgloss.Center).
 				Render("SSH Mode Active!!!")

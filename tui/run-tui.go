@@ -4,6 +4,8 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 )
 
+var SSHActive = false
+
 func RunTUI() {
 	tabs := []string{"General", "IPv6 Mode", "Profile Management", "Settings"}
 	tabContent := []*Model{

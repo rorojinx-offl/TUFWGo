@@ -16,8 +16,6 @@ import (
 	"time"
 )
 
-var SSHActive = false
-
 func Connect(host, user string, port int) {
 	khPath := findKnownHostsPath()
 	client, err := connectWithKnownHosts(
@@ -44,7 +42,7 @@ func Connect(host, user string, port int) {
 	}
 	defer client.Close()
 	fmt.Println("SSH connection succeeded")
-	SSHActive = true
+	tui.SSHActive = true
 	tui.RunTUI()
 }
 
