@@ -3,6 +3,7 @@ package tui
 import (
 	"TUFWGo/system"
 	"bufio"
+	"regexp"
 	"strings"
 
 	"github.com/charmbracelet/bubbles/paginator"
@@ -55,7 +56,7 @@ func (d DelListModel) View() string {
 	var b strings.Builder
 	b.WriteString("\n  Delete UFW Rules\n\n")
 
-	header := padRight("To", colToWidth) + padRight("Action", colActionWidth) + "From"
+	header := padRight("#", colNumberWidth) + padRight("To", colToWidth) + padRight("Action", colActionWidth) + "From"
 	b.WriteString(header + "\n")
 
 	start, end := d.paginator.GetSliceBounds(len(d.items))
@@ -88,6 +89,8 @@ func readUFWStatusForDeletion() ([]string, error) {
 	return items, nil
 }
 
+var leadingNum = regexp.MustCompile(`^\[\s*(\d+)\]\s+`)
+
 func parseUFWStatusForDeletion(stdout string) []ufwRuleWithNumbering {
 	sc := bufio.NewScanner(strings.NewReader(stdout))
 	foundCols := false
@@ -100,7 +103,7 @@ func parseUFWStatusForDeletion(stdout string) []ufwRuleWithNumbering {
 		}
 
 		if !foundCols {
-			if strings.HasPrefix(line, "") && strings.Contains(line, "To") && strings.Contains(line, "Action") && strings.Contains(line, "From") {
+			if strings.HasPrefix(line, "To") && strings.Contains(line, "Action") && strings.Contains(line, "From") {
 				foundCols = true
 			}
 			continue
@@ -110,16 +113,23 @@ func parseUFWStatusForDeletion(stdout string) []ufwRuleWithNumbering {
 			continue
 		}
 
-		fields := splitColumns(line)
-		if len(fields) < 4 {
+		m := leadingNum.FindStringSubmatch(line)
+		if len(m) != 2 {
+			continue
+		}
+		num := m[1]
+		rest := strings.TrimSpace(line[len(m[0]):])
+
+		fields := splitColumns(rest)
+		if len(fields) < 3 {
 			continue
 		}
 
 		rules = append(rules, ufwRuleWithNumbering{
-			Number: fields[0],
-			To:     fields[1],
-			Action: fields[2],
-			From:   strings.Join(fields[3:], " "),
+			Number: num,
+			To:     fields[0],
+			Action: fields[1],
+			From:   strings.Join(fields[2:], " "),
 		})
 	}
 	return rules
