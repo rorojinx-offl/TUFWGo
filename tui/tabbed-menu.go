@@ -3,6 +3,7 @@ package tui
 import (
 	"TUFWGo/system"
 	"TUFWGo/ufw"
+	"strconv"
 	"strings"
 	"time"
 
@@ -22,6 +23,7 @@ type TabModel struct {
 	toast       string
 	toastUntil  time.Time
 	cmd         string
+	rule        string
 }
 
 type confirmDeclined struct{ ReturnTo tea.Model }
@@ -29,9 +31,9 @@ type confirmDeclined struct{ ReturnTo tea.Model }
 type confirmModel struct {
 	prompt   string
 	cmd      string
-	data     FormData
 	choice   int
 	returnTo tea.Model
+	onYes    func() tea.Msg
 }
 
 type errorBoxModel struct {
@@ -89,12 +91,16 @@ func (m *TabModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				cmd = cmdCheck
 				m.cmd = cmd
 			}
+			onYes := func() tea.Msg { return FormSubmitted{Data: formStruct} }
+			var note string
 			if structPass.AppProfile == "" {
-				m.child = newConfirmModel("Are you sure you want to submit the following command?", cmd, formStruct, m.child)
+				note = "Are you sure you want to submit the following command?"
+
 			} else {
 				// Warn user about automatic IPv6 rule addition
-				m.child = newConfirmModel("Are you sure you want to submit the following command?\n\nNote: Directly configuring an app profile will automatically add an IPv6 rule as well!", cmd, formStruct, m.child)
+				note = "Are you sure you want to submit the following command?\n\nNote: Directly configuring an app profile will automatically add an IPv6 rule as well!"
 			}
+			m.child = newConfirmModel(note, cmd, m.child, onYes)
 			return m, nil
 		case confirmDeclined:
 			m.child = child.ReturnTo
@@ -110,6 +116,43 @@ func (m *TabModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.child = newSuccessBoxModel("UFW successfully added the following rule:", m.cmd, nil)
 			m.toastUntil = time.Now().Add(5 * time.Second)
 			return m, tea.Tick(time.Until(m.toastUntil), func(time.Time) tea.Msg { return clearToast{} })
+		case DeleteConfirmation:
+			delInt, delError := child.number, child.error
+			if delError != nil {
+				m.child = newErrorBoxModel("There was an error deleting your rule!", delError.Error(), m.child)
+				return m, nil
+			}
+			delCmd := "ufw delete " + strconv.Itoa(delInt)
+			m.cmd = delCmd
+			rule, err := ufw.ParseRuleFromNumber(delInt)
+			m.rule = rule
+			if err != nil {
+				m.child = newErrorBoxModel("There was an error deleting your rule!", err.Error(), m.child)
+			}
+			onYes := func() tea.Msg { return DeleteExecuted{} }
+			m.child = newConfirmModel("Are you sure you want to delete the following rule?", rule, m.child, onYes)
+			return m, nil
+		case DeleteExecuted:
+			_, err := system.RunCommand(m.cmd)
+			if err != nil {
+				m.child = newErrorBoxModel("There was an error executing your command!", err.Error(), m.child)
+				return m, nil
+			}
+			// Show success message for 5 seconds
+			m.child = newSuccessBoxModel("UFW successfully deleted the following rule:", m.rule, nil)
+			m.toastUntil = time.Now().Add(5 * time.Second)
+			return m, tea.Tick(time.Until(m.toastUntil), func(time.Time) tea.Msg { return clearToast{} })
+		case clearToast:
+			if time.Now().After(m.toastUntil) {
+				m.toastUntil = time.Time{}
+				m.child = nil
+				return m, nil
+			}
+		}
+		if time.Now().Before(m.toastUntil) {
+			// Still showing toast, don't process other messages
+			return m, nil
+
 		}
 
 		next, cmd := m.child.Update(msg)
@@ -290,13 +333,13 @@ func (m *TabModel) View() string {
 	return docStyle.Render(doc.String())
 }
 
-func newConfirmModel(prompt, cmd string, data FormData, returnTo tea.Model) *confirmModel {
+func newConfirmModel(prompt, cmd string, returnTo tea.Model, onYes func() tea.Msg) *confirmModel {
 	return &confirmModel{
 		prompt:   prompt,
 		cmd:      cmd,
-		data:     data,
 		choice:   1,
 		returnTo: returnTo,
+		onYes:    onYes,
 	}
 }
 
@@ -315,9 +358,11 @@ func (c *confirmModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return c, nil
 		case "enter":
 			if c.choice == 0 {
-				return c, func() tea.Msg { return FormSubmitted{Data: c.data} }
+				if c.onYes != nil {
+					return c, func() tea.Msg { return c.onYes() }
+				}
+				return c.returnTo, nil
 			}
-			return c, func() tea.Msg { return confirmDeclined{ReturnTo: c.returnTo} }
 		case "esc":
 			return c, func() tea.Msg { return confirmDeclined{ReturnTo: c.returnTo} }
 		}

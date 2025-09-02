@@ -1,8 +1,10 @@
 package ufw
 
 import (
+	"TUFWGo/system"
 	"errors"
 	"fmt"
+	"math"
 	"net"
 	"strings"
 )
@@ -105,4 +107,22 @@ func (f *Form) ParseForm() (string, error) {
 func validIpv4(ip string) bool {
 	goodIP := net.ParseIP(ip)
 	return goodIP != nil && goodIP.To4() != nil
+}
+
+func ParseRuleFromNumber(num int) (string, error) {
+	digits := digitCount(num)
+
+	cmd := fmt.Sprintf("ufw status numbered | grep '^\\[ *%d\\]' | sed -E 's/^\\[\\s*[0-9]{%d}+\\]\\s*//'", num, digits)
+	out, err := system.RunCommand(cmd)
+	if err != nil {
+		return "", err
+	}
+	return strings.TrimSpace(out), nil
+}
+
+func digitCount(n int) int {
+	if n == 0 {
+		return 1
+	}
+	return int(math.Log10(float64(n))) + 1
 }

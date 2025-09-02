@@ -3,7 +3,10 @@ package tui
 import (
 	"TUFWGo/system"
 	"bufio"
+	"errors"
+	"github.com/charmbracelet/bubbles/textinput"
 	"regexp"
+	"strconv"
 	"strings"
 
 	"github.com/charmbracelet/bubbles/paginator"
@@ -14,6 +17,28 @@ import (
 type DelListModel struct {
 	paginator paginator.Model
 	items     []string
+	delete    textinput.Model
+}
+
+var fieldBoxStyle = lipgloss.NewStyle().
+	Padding(1, 2).
+	Border(lipgloss.RoundedBorder()).
+	Copy().BorderForeground(lipgloss.Color("#ffffff"))
+
+type DeleteConfirmation struct {
+	number int
+	error  error
+}
+
+type DeleteExecuted struct{}
+
+func (d DelListModel) collectNumber() (int, error) {
+	str := d.delete.Value()
+	num, err := strconv.ParseInt(str, 10, 64)
+	if err != nil {
+		return 0, errors.New("invalid number")
+	}
+	return int(num), nil
 }
 
 func DeleteList() DelListModel {
@@ -29,13 +54,19 @@ func DeleteList() DelListModel {
 	p.InactiveDot = lipgloss.NewStyle().Foreground(lipgloss.AdaptiveColor{Light: "250", Dark: "238"}).Render("•")
 	p.SetTotalPages(len(items))
 
-	return DelListModel{
-		paginator: p,
-		items:     items,
-	}
+	d := DelListModel{}
+	d.paginator = p
+	d.items = items
+	d.delete = textinput.New()
+	d.delete.Placeholder = "rule number e.g. 1"
+	d.delete.Prompt = ""
+	d.delete.CharLimit = 4
+	d.delete.Width = 20
+	d.delete.Focus()
+	return d
 }
 
-func (d DelListModel) Init() tea.Cmd { return nil }
+func (d DelListModel) Init() tea.Cmd { return textinput.Blink }
 
 func (d DelListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmd tea.Cmd
@@ -46,9 +77,13 @@ func (d DelListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return d, tea.Quit
 		case "r":
 			DeleteList()
+		case "enter":
+			num, err := d.collectNumber()
+			return d, func() tea.Msg { return DeleteConfirmation{number: num, error: err} }
 		}
 	}
 	d.paginator, cmd = d.paginator.Update(msg)
+	d.delete, cmd = d.delete.Update(msg)
 	return d, cmd
 }
 
@@ -63,9 +98,17 @@ func (d DelListModel) View() string {
 	for _, item := range d.items[start:end] {
 		b.WriteString(item + "\n\n")
 	}
-	b.WriteString("  " + d.paginator.View())
+	b.WriteString("  " + d.paginator.View() + "\n\n")
+
+	deleteField := renderDeleteField("Enter a rule number to delete it", d.delete.View())
+	b.WriteString(deleteField + "\n")
+
 	b.WriteString("\n\n  ←/→ page • r: reload • esc: back\n")
 	return b.String()
+}
+
+func renderDeleteField(label, body string) string {
+	return fieldBoxStyle.Render(labelStyle.Foreground(accent).Render(label) + "\n" + body)
 }
 
 type ufwRuleWithNumbering struct {
