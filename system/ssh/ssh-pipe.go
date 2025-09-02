@@ -65,7 +65,7 @@ func connectWithKnownHosts(
 	}
 
 	client, err := dialSSH(ctx, addr, cfg, connectTimeout)
-	if err != nil {
+	if err == nil {
 		return client, nil
 	}
 
