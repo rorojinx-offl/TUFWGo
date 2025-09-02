@@ -1,6 +1,7 @@
-package system
+package samples
 
 import (
+	"TUFWGo/system"
 	"TUFWGo/ufw"
 	"bufio"
 	"fmt"
@@ -31,7 +32,7 @@ func Input() {
 		return
 	}
 
-	_, err = RunCommand(finalCommand)
+	_, err = system.RunCommand(finalCommand)
 }
 
 func readLine(reader *bufio.Reader, prompt string) string {

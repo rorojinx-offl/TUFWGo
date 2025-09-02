@@ -12,7 +12,7 @@ var sshMode = flag.Bool("ssh", false, "Run in SSH mode")
 
 func main() {
 	runTUIMode()
-	//system.Input()
+	//samples.Input()
 	//tui.RunForm()
 }
 
