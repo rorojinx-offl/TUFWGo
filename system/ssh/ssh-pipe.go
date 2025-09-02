@@ -1,6 +1,7 @@
 package ssh
 
 import (
+	"TUFWGo/tui"
 	"bufio"
 	"context"
 	"errors"
@@ -44,6 +45,7 @@ func Connect(host, user string, port int) {
 	defer client.Close()
 	fmt.Println("SSH connection succeeded")
 	SSHActive = true
+	tui.RunTUI()
 }
 
 func connectWithKnownHosts(

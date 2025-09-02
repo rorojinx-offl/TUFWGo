@@ -1,9 +1,7 @@
 package tui
 
 import (
-	"fmt"
 	tea "github.com/charmbracelet/bubbletea"
-	"os"
 )
 
 func RunTUI() {
@@ -23,13 +21,5 @@ func RunTUI() {
 	p := tea.NewProgram(m, tea.WithAltScreen())
 	if _, err := p.Run(); err != nil {
 		panic(err)
-	}
-}
-
-func RunForm() {
-	p := tea.NewProgram(initialFormModel(), tea.WithAltScreen())
-	if _, err := p.Run(); err != nil {
-		fmt.Println("Error:", err)
-		os.Exit(1)
 	}
 }
