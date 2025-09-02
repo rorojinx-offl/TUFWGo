@@ -361,7 +361,7 @@ func (c *confirmModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				if c.onYes != nil {
 					return c, func() tea.Msg { return c.onYes() }
 				}
-				return c.returnTo, nil
+				return c, func() tea.Msg { return confirmDeclined{ReturnTo: c.returnTo} }
 			}
 		case "esc":
 			return c, func() tea.Msg { return confirmDeclined{ReturnTo: c.returnTo} }
