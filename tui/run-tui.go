@@ -9,7 +9,7 @@ import (
 func RunTUI() {
 	tabs := []string{"General", "IPv6 Mode", "Profile Management", "Settings"}
 	tabContent := []*Model{
-		{Items: []string{"List Current Rules", "Add Rule", "Remove Rule", "Toggle Rules"}},
+		{Items: []string{"List Current Rules", "Add Rule", "Remove Rule", "Fail2Ban Integration (Coming Soon!)"}},
 		{Items: []string{"Adjust your preferences here.", "Change settings as needed.", "Customize your experience.", "Save your changes."}},
 		{Items: []string{"View and edit your profile information.", "Manage your account details.", "Update your password.", "Set your privacy options."}},
 		{Items: []string{"Find answers to common questions.", "Contact support if needed.", "Explore tutorials and guides.", "Get the most out of the app."}},

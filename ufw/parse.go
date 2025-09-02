@@ -1,7 +1,7 @@
 package ufw
 
 import (
-	"TUFWGo/system"
+	"TUFWGo/system/local"
 	"errors"
 	"fmt"
 	"math"
@@ -113,7 +113,7 @@ func ParseRuleFromNumber(num int) (string, error) {
 	digits := digitCount(num)
 
 	cmd := fmt.Sprintf("ufw status numbered | grep '^\\[ *%d\\]' | sed -E 's/^\\[\\s*[0-9]{%d}+\\]\\s*//'", num, digits)
-	out, err := system.RunCommand(cmd)
+	out, err := local.RunCommand(cmd)
 	if err != nil {
 		return "", err
 	}

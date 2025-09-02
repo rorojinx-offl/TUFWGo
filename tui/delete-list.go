@@ -1,7 +1,7 @@
 package tui
 
 import (
-	"TUFWGo/system"
+	"TUFWGo/system/local"
 	"bufio"
 	"errors"
 	"github.com/charmbracelet/bubbles/textinput"
@@ -119,7 +119,7 @@ type ufwRuleWithNumbering struct {
 }
 
 func readUFWStatusForDeletion() ([]string, error) {
-	stdout, _ := system.RunCommand("ufw status numbered | grep -v \"(v6)\"")
+	stdout, _ := local.RunCommand("ufw status numbered | grep -v \"(v6)\"")
 	rules := parseUFWStatusForDeletion(stdout)
 	if len(rules) == 0 {
 		return []string{"No rules found."}, nil

@@ -1,7 +1,7 @@
 package tui
 
 import (
-	"TUFWGo/system"
+	"TUFWGo/system/local"
 	"TUFWGo/ufw"
 	"strconv"
 	"strings"
@@ -107,7 +107,7 @@ func (m *TabModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, nil
 
 		case FormSubmitted:
-			_, err := system.RunCommand(m.cmd)
+			_, err := local.RunCommand(m.cmd)
 			if err != nil {
 				m.child = newErrorBoxModel("There was an error executing your command!", err.Error(), m.child)
 				return m, nil
@@ -133,7 +133,7 @@ func (m *TabModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.child = newConfirmModel("Are you sure you want to delete the following rule?", rule, m.child, onYes)
 			return m, nil
 		case DeleteExecuted:
-			_, err := system.CommandConversation(m.cmd, "y\n")
+			_, err := local.CommandConversation(m.cmd, "y\n")
 			if err != nil {
 				m.child = newErrorBoxModel("There was an error executing your command!", err.Error(), m.child)
 				return m, nil
