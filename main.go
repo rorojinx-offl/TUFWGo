@@ -18,21 +18,14 @@ func main() {
 
 func runTUIMode() {
 	flag.Parse()
-	if *skipTermCheck {
-		tui.RunTUI()
-		return
-	} else if *sshMode {
-		if !local.TermCheck() {
+	if *sshMode {
+		if !*skipTermCheck && !local.TermCheck() {
 			return
 		}
 		samples.InputSSH()
 		return
-	} else if *skipTermCheck && *sshMode {
-		samples.InputSSH()
-		return
 	}
-
-	if !local.TermCheck() {
+	if !*skipTermCheck && !local.TermCheck() {
 		return
 	}
 	tui.RunTUI()
