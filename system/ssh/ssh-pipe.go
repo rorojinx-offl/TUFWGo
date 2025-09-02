@@ -30,6 +30,9 @@ func Connect(host, user string, port int) {
 	if err != nil {
 		panic(fmt.Sprint("Connection error: ", err))
 	}
+	if client == nil {
+		panic("No SSH client returned")
+	}
 	defer client.Close()
 	fmt.Println("SSH connection succeeded")
 }

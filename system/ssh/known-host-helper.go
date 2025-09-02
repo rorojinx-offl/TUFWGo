@@ -40,7 +40,7 @@ func hostPattern(host string, port int) string {
 	if port == 22 {
 		return host
 	}
-	return fmt.Sprintf("%s:%d", host, port)
+	return fmt.Sprintf("[%s]:%d", host, port)
 }
 
 func appendKnownHostLine(path, pattern string, key ssh.PublicKey) error {
