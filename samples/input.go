@@ -1,15 +1,17 @@
 package samples
 
 import (
-	"TUFWGo/system"
+	"TUFWGo/system/local"
+	"TUFWGo/system/ssh"
 	"TUFWGo/ufw"
 	"bufio"
 	"fmt"
 	"os"
+	"strconv"
 	"strings"
 )
 
-func Input() {
+func InputUFW() {
 	form := ufw.Form{}
 	reader := bufio.NewReader(os.Stdin)
 
@@ -32,7 +34,21 @@ func Input() {
 		return
 	}
 
-	_, err = system.RunCommand(finalCommand)
+	_, err = local.RunCommand(finalCommand)
+}
+
+func InputSSH() {
+	reader := bufio.NewReader(os.Stdin)
+
+	host := readRequired(reader, "Host: ")
+	portStr := readLine(reader, "Port: ")
+	port, err := strconv.ParseInt(portStr, 10, 32)
+	if err != nil {
+		panic(err)
+	}
+	user := readRequired(reader, "User: ")
+
+	ssh.Connect(host, user, int(port))
 }
 
 func readLine(reader *bufio.Reader, prompt string) string {

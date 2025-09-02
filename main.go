@@ -1,10 +1,10 @@
 package main
 
 import (
-	"TUFWGo/system"
+	"TUFWGo/samples"
+	"TUFWGo/system/local"
 	"TUFWGo/tui"
 	"flag"
-	"fmt"
 )
 
 var skipTermCheck = flag.Bool("skip-term-check", false, "Skip the terminal size check")
@@ -22,14 +22,14 @@ func runTUIMode() {
 		tui.RunTUI()
 		return
 	} else if *sshMode {
-		if !system.TermCheck() {
+		if !local.TermCheck() {
 			return
 		}
-		fmt.Println("TEST: SSH MODE")
+		samples.InputSSH()
 		return
 	}
 
-	if !system.TermCheck() {
+	if !local.TermCheck() {
 		return
 	}
 	tui.RunTUI()
