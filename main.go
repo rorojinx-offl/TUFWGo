@@ -27,6 +27,9 @@ func runTUIMode() {
 		}
 		samples.InputSSH()
 		return
+	} else if *skipTermCheck && *sshMode {
+		samples.InputSSH()
+		return
 	}
 
 	if !local.TermCheck() {
