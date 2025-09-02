@@ -67,8 +67,24 @@ func connectWithKnownHosts(
 
 	rec := &hostKeyRecorder{inner: baseHK}
 	cfg := &ssh.ClientConfig{
-		User:            user,
-		Auth:            []ssh.AuthMethod{ssh.PasswordCallback(getPassword)},
+		User: user,
+		Auth: []ssh.AuthMethod{ssh.PasswordCallback(getPassword),
+			ssh.KeyboardInteractive(func(user, instr string, questions []string, echos []bool) ([]string, error) {
+				pw, err := getPassword()
+				if err != nil {
+					return nil, err
+				}
+				answers := make([]string, len(questions))
+				for i, q := range questions {
+					if strings.Contains(strings.ToLower(q), "password") {
+						answers[i] = pw
+					} else {
+						answers[i] = ""
+					}
+				}
+				return answers, nil
+			}),
+		},
 		HostKeyCallback: rec.callback,
 		Timeout:         handshakeTimeout,
 	}
