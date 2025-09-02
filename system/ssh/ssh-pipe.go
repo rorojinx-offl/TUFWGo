@@ -5,11 +5,13 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/charmbracelet/x/term"
 	"golang.org/x/crypto/ssh"
 	"golang.org/x/crypto/ssh/knownhosts"
 	"net"
 	"os"
 	"strings"
+	"syscall"
 	"time"
 )
 
@@ -23,8 +25,12 @@ func Connect(host, user string, port int) {
 		time.Second*12, //SSH handshake timeout
 		func() (string, error) {
 			fmt.Print("SSH password: ")
-			pwd, _ := bufio.NewReader(os.Stdin).ReadString('\n')
-			return strings.TrimSpace(pwd), nil
+			pwd, err := term.ReadPassword(uintptr(int(syscall.Stdin)))
+			if err != nil {
+				return "", err
+			}
+			fmt.Println()
+			return string(pwd), nil
 		},
 	)
 	if err != nil {
