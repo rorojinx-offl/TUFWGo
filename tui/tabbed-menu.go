@@ -365,10 +365,16 @@ func (m *TabModel) View() string {
 		}
 
 		var sshWarning string
-		if SSHActive { // tweak thresholds as you like
+		if SSHActive {
+			if err := sshCheckup(); err != nil {
+				sshWarning = lipgloss.NewStyle().
+					Align(lipgloss.Center).
+					Render("SSH mode is active but TUFWGO is unable to connect to the remote client!!!")
+			}
+
 			sshWarning = lipgloss.NewStyle().
 				Align(lipgloss.Center).
-				Render("SSH Mode Active!!!")
+				Render(fmt.Sprintf("SSH mode is active and you are connected remotely to: %s!!!", ssh.GlobalHost))
 		}
 		content = content + "\n" + sshWarning
 
