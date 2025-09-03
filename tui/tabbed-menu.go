@@ -96,6 +96,19 @@ func (m *TabModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 			onYes := func() tea.Msg { return FormSubmitted{Data: formStruct} }
 			var note string
+
+			if SSHActive {
+				if structPass.AppProfile == "" {
+					note = "Are you sure you want to submit the following command? This will be executed on the remote client!"
+
+				} else {
+					// Warn user about automatic IPv6 rule addition
+					note = "Are you sure you want to submit the following command? This will be executed on the remote client!\n\nNote: Directly configuring an app profile will automatically add an IPv6 rule as well!"
+				}
+				m.child = newConfirmModel(note, cmd, m.child, onYes)
+				return m, nil
+			}
+
 			if structPass.AppProfile == "" {
 				note = "Are you sure you want to submit the following command?"
 
