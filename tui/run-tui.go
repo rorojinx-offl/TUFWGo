@@ -10,7 +10,7 @@ func RunTUI() {
 	tabs := []string{"General", "IPv6 Mode", "Profile Management", "Settings"}
 	var withSSH []string
 	if SSHActive {
-		withSSH = []string{"List Current Rules", "Add Rule", "Remove Rule", "Test SSH Connection, Fail2Ban Dashboard (Coming Soon!)"}
+		withSSH = []string{"List Current Rules", "Add Rule", "Remove Rule", "Test SSH Connection", "Fail2Ban Dashboard (Coming Soon!)"}
 	} else {
 		withSSH = []string{"List Current Rules", "Add Rule", "Remove Rule", "Fail2Ban Dashboard (Coming Soon!)"}
 	}
