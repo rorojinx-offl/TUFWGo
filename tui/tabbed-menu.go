@@ -171,10 +171,26 @@ func (m *TabModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.child = newConfirmModel(note, rule, m.child, onYes)
 			return m, nil
 		case DeleteExecuted:
-			_, err := local.CommandConversation(m.cmd, "y\n")
-			if err != nil {
-				m.child = newErrorBoxModel("There was an error executing your command!", err.Error(), m.child)
-				return m, nil
+			var err error
+			if SSHActive {
+				if err = sshCheckup(); err != nil {
+					m.child = newErrorBoxModel("Couldn't connect via SSH!", fmt.Sprint("Unable to connect to SSH server: ", err), m.child)
+					return m, nil
+				}
+				_, err = ssh.ConversationalCommentStream(m.cmd, "y\n")
+				if err != nil {
+					m.child = newErrorBoxModel("There was an error executing your command!", err.Error(), m.child)
+					return m, nil
+				}
+				m.child = newSuccessBoxModel("UFW rule deleted remotely:", m.rule, nil)
+				m.toastUntil = time.Now().Add(5 * time.Second)
+				return m, tea.Tick(time.Until(m.toastUntil), func(time.Time) tea.Msg { return clearToast{} })
+			} else {
+				_, err = local.CommandConversation(m.cmd, "y\n")
+				if err != nil {
+					m.child = newErrorBoxModel("There was an error executing your command!", err.Error(), m.child)
+					return m, nil
+				}
 			}
 			// Show success message for 5 seconds
 			m.child = newSuccessBoxModel("UFW successfully deleted the following rule:", m.rule, nil)
