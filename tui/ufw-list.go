@@ -2,7 +2,9 @@ package tui
 
 import (
 	"TUFWGo/system/local"
+	"TUFWGo/system/ssh"
 	"bufio"
+	"fmt"
 	"regexp"
 	"strings"
 
@@ -57,7 +59,14 @@ func (m EnumModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m EnumModel) View() string {
 	var b strings.Builder
-	b.WriteString("\n  Active UFW Rules\n\n")
+	if SSHActive {
+		if err := sshCheckup(); err != nil {
+			b.WriteString("\n  Active UFW Rules On Remote Client\n\n")
+		}
+		b.WriteString(fmt.Sprintf("\n  Active UFW Rules On Remote Client: %s\n\n", ssh.GlobalHost))
+	} else {
+		b.WriteString("\n  Active UFW Rules\n\n")
+	}
 
 	header := padRight("To", colToWidth) + padRight("Action", colActionWidth) + "From"
 	b.WriteString(header + "\n")
@@ -78,7 +87,15 @@ type ufwRule struct {
 }
 
 func readUFWStatus() ([]string, error) {
-	stdout, _ := local.RunCommand("ufw status | grep -v \"(v6)\"")
+	var stdout string
+	if SSHActive {
+		if err := sshCheckup(); err != nil {
+			return []string{"Could not retrieve rules from remote host."}, nil
+		}
+		stdout, _ = ssh.CommandStream("ufw status | grep -v \"(v6)\"")
+	} else {
+		stdout, _ = local.RunCommand("ufw status | grep -v \"(v6)\"")
+	}
 	rules := parseUFWStatus(stdout)
 	if len(rules) == 0 {
 		return []string{"No rules found."}, nil
