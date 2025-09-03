@@ -269,8 +269,8 @@ func sshCheckup() error {
 		return errors.New("SSH Mode is not active")
 	}
 
-	ok, _, err := ssh.GlobalClient.SendRequest("keepalive@openssh.com", true, nil)
-	if err != nil || !ok {
+	_, _, err := ssh.GlobalClient.SendRequest("keepalive@openssh.com", true, nil)
+	if err != nil {
 		return errors.New("SSH Connection Failed")
 	}
 	return nil
