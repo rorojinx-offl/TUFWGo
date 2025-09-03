@@ -59,7 +59,7 @@ func (m EnumModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m EnumModel) View() string {
 	var b strings.Builder
-	if SSHActive {
+	if ssh.GetSSHStatus() {
 		if err := sshCheckup(); err != nil {
 			b.WriteString("\n  Active UFW Rules On Remote Client\n\n")
 		}
@@ -88,7 +88,7 @@ type ufwRule struct {
 
 func readUFWStatus() ([]string, error) {
 	var stdout string
-	if SSHActive {
+	if ssh.GetSSHStatus() {
 		if err := sshCheckup(); err != nil {
 			return []string{"Could not retrieve rules from remote host."}, nil
 		}

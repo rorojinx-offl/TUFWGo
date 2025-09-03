@@ -97,7 +97,7 @@ func (m *TabModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			onYes := func() tea.Msg { return FormSubmitted{Data: formStruct} }
 			var note string
 
-			if SSHActive {
+			if ssh.GetSSHStatus() {
 				if structPass.AppProfile == "" {
 					note = "Are you sure you want to submit the following command? This will be executed on the remote client!"
 
@@ -124,7 +124,7 @@ func (m *TabModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		case FormSubmitted:
 			var err error
-			if SSHActive {
+			if ssh.GetSSHStatus() {
 				if err = sshCheckup(); err != nil {
 					m.child = newErrorBoxModel("Couldn't connect via SSH!", fmt.Sprint("Unable to connect to SSH server: ", err), m.child)
 					return m, nil
@@ -163,7 +163,7 @@ func (m *TabModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 			onYes := func() tea.Msg { return DeleteExecuted{} }
 			var note string
-			if SSHActive {
+			if ssh.GetSSHStatus() {
 				note = "Are you sure you want to delete the following rule? This will be executed on the remote client!"
 			} else {
 				note = "Are you sure you want to delete the following rule?"
@@ -172,7 +172,7 @@ func (m *TabModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, nil
 		case DeleteExecuted:
 			var err error
-			if SSHActive {
+			if ssh.GetSSHStatus() {
 				if err = sshCheckup(); err != nil {
 					m.child = newErrorBoxModel("Couldn't connect via SSH!", fmt.Sprint("Unable to connect to SSH server: ", err), m.child)
 					return m, nil
@@ -386,7 +386,7 @@ func (m *TabModel) View() string {
 		}
 
 		var sshWarning string
-		if SSHActive {
+		if ssh.GetSSHStatus() {
 			if err := sshCheckup(); err != nil {
 				sshWarning = lipgloss.NewStyle().
 					Align(lipgloss.Center).

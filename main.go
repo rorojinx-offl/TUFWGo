@@ -28,7 +28,7 @@ func runTUIMode() {
 			fmt.Println("SSH Connection Failed:", err)
 			return
 		}
-		tui.SSHActive = true
+		ssh.SetSSHStatus(true)
 		tui.RunTUI()
 		defer client.Close()
 		return

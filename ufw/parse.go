@@ -2,6 +2,7 @@ package ufw
 
 import (
 	"TUFWGo/system/local"
+	"TUFWGo/system/ssh"
 	"errors"
 	"fmt"
 	"math"
@@ -113,11 +114,23 @@ func ParseRuleFromNumber(num int) (string, error) {
 	digits := digitCount(num)
 
 	cmd := fmt.Sprintf("ufw status numbered | grep '^\\[ *%d\\]' | sed -E 's/^\\[\\s*[0-9]{%d}+\\]\\s*//'", num, digits)
-	out, err := local.RunCommand(cmd)
-	if err != nil {
-		return "", err
+
+	if ssh.GetSSHStatus() {
+		if err := ssh.Checkup(); err != nil {
+			return "", err
+		}
+		out, err := ssh.CommandStream(cmd)
+		if err != nil {
+			return "", err
+		}
+		return strings.TrimSpace(out), nil
+	} else {
+		out, err := local.RunCommand(cmd)
+		if err != nil {
+			return "", err
+		}
+		return strings.TrimSpace(out), nil
 	}
-	return strings.TrimSpace(out), nil
 }
 
 func digitCount(n int) int {
