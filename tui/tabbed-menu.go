@@ -143,6 +143,7 @@ func (m *TabModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					m.child = newErrorBoxModel("There was an error executing your command!", err.Error(), m.child)
 					return m, nil
 				}
+
 			}
 			// Show success message for 5 seconds
 			m.child = newSuccessBoxModel("UFW successfully added the following rule:", m.cmd, nil)
