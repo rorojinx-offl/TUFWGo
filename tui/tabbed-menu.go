@@ -5,6 +5,7 @@ import (
 	"TUFWGo/system/ssh"
 	"TUFWGo/ufw"
 	"errors"
+	"fmt"
 	"strconv"
 	"strings"
 	"time"
@@ -198,9 +199,11 @@ func (m *TabModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.selected = ""
 		case "Test SSH Connection":
 			if err := sshCheckup(); err != nil {
-				m.child = newErrorBoxModel("SSH Connection Failed!", "Unable to connect to SSH server!", m.child)
+				m.child = newErrorBoxModel("SSH Connection Failed!", fmt.Sprint("Unable to connect to SSH server:", err), m.child)
+
+			} else {
+				m.child = newSuccessBoxModel("SSH Connection Successful!", "You are now connected via SSH!", m.child)
 			}
-			m.child = newSuccessBoxModel("SSH Connection Successful!", "You are now connected via SSH!", m.child)
 			m.selected = ""
 		default:
 			m.selected = msg.Item
@@ -247,6 +250,10 @@ func (m *TabModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func sshCheckup() error {
+	if ssh.GlobalClient == nil {
+		return errors.New("No SSH Client Available!")
+	}
+
 	ok, _, err := ssh.GlobalClient.SendRequest("keepalive@openssh.com", true, nil)
 	if err != nil || !ok {
 		return errors.New("SSH Connection Failed!")
