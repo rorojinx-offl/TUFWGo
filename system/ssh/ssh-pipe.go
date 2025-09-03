@@ -17,6 +17,7 @@ import (
 )
 
 var GlobalClient *ssh.Client
+var GlobalHost string
 
 func Connect(host, user string, port int) (*ssh.Client, error) {
 	khPath := findKnownHostsPath()
@@ -45,6 +46,7 @@ func Connect(host, user string, port int) (*ssh.Client, error) {
 	defer client.Close()
 	fmt.Println("SSH connection succeeded")
 	GlobalClient = client
+	GlobalHost = host
 	return client, nil
 }
 
