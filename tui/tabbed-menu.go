@@ -496,7 +496,7 @@ func (s *successBoxModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (s *successBoxModel) View() string {
-	title := lipgloss.NewStyle().Bold(true).Render("Successfully Parsed")
+	title := lipgloss.NewStyle().Bold(true).Render("Success!")
 	body := s.prompt + "\n\n" + lipgloss.NewStyle().Faint(true).Render(s.cmd)
 	box := lipgloss.NewStyle().
 		Border(lipgloss.RoundedBorder()).
