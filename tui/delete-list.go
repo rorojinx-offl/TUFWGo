@@ -133,9 +133,9 @@ func readUFWStatusForDeletion() ([]string, error) {
 		if err := sshCheckup(); err != nil {
 			return []string{"Could not retrieve rules from remote host."}, nil
 		}
-		stdout, _ = ssh.CommandStream("ufw status | grep -v \"(v6)\"")
+		stdout, _ = ssh.CommandStream("ufw status numbered | grep -v \"(v6)\"")
 	} else {
-		stdout, _ = local.RunCommand("ufw status | grep -v \"(v6)\"")
+		stdout, _ = local.RunCommand("ufw status numbered | grep -v \"(v6)\"")
 	}
 
 	rules := parseUFWStatusForDeletion(stdout)
