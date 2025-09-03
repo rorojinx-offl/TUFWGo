@@ -16,6 +16,8 @@ import (
 	"golang.org/x/crypto/ssh/knownhosts"
 )
 
+var GlobalClient *ssh.Client
+
 func Connect(host, user string, port int) (*ssh.Client, error) {
 	khPath := findKnownHostsPath()
 	client, err := connectWithKnownHosts(
@@ -42,6 +44,7 @@ func Connect(host, user string, port int) (*ssh.Client, error) {
 	}
 	defer client.Close()
 	fmt.Println("SSH connection succeeded")
+	GlobalClient = client
 	return client, nil
 }
 

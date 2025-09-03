@@ -2,7 +2,9 @@ package tui
 
 import (
 	"TUFWGo/system/local"
+	"TUFWGo/system/ssh"
 	"TUFWGo/ufw"
+	"errors"
 	"strconv"
 	"strings"
 	"time"
@@ -194,6 +196,12 @@ func (m *TabModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "Remove Rule":
 			m.child = DeleteList()
 			m.selected = ""
+		case "Test SSH Connection":
+			if err := sshCheckup(); err != nil {
+				m.child = newErrorBoxModel("SSH Connection Failed!", "Unable to connect to SSH server!", m.child)
+			}
+			m.child = newSuccessBoxModel("SSH Connection Successful!", "You are now connected via SSH!", m.child)
+			m.selected = ""
 		default:
 			m.selected = msg.Item
 		}
@@ -236,6 +244,14 @@ func (m *TabModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	}
 
 	return m, nil
+}
+
+func sshCheckup() error {
+	ok, _, err := ssh.GlobalClient.SendRequest("keepalive@openssh.com", true, nil)
+	if err != nil || !ok {
+		return errors.New("SSH Connection Failed!")
+	}
+	return nil
 }
 
 func tabBorderWithBottom(left, middle, right string) lipgloss.Border {
