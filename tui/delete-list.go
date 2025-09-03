@@ -2,8 +2,10 @@ package tui
 
 import (
 	"TUFWGo/system/local"
+	"TUFWGo/system/ssh"
 	"bufio"
 	"errors"
+	"fmt"
 	"github.com/charmbracelet/bubbles/textinput"
 	"regexp"
 	"strconv"
@@ -89,7 +91,14 @@ func (d DelListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (d DelListModel) View() string {
 	var b strings.Builder
-	b.WriteString("\n  Delete UFW Rules\n\n")
+	if SSHActive {
+		if err := sshCheckup(); err != nil {
+			b.WriteString("\n  Delete UFW Rules On Remote Client\n\n")
+		}
+		b.WriteString(fmt.Sprintf("\n  Delete UFW Rules On Remote Client: %s\n\n", ssh.GlobalHost))
+	} else {
+		b.WriteString("\n  Delete UFW Rules\n\n")
+	}
 
 	header := padRight("#", colNumberWidth) + padRight("To", colToWidth) + padRight("Action", colActionWidth) + "From"
 	b.WriteString(header + "\n")
@@ -119,7 +128,16 @@ type ufwRuleWithNumbering struct {
 }
 
 func readUFWStatusForDeletion() ([]string, error) {
-	stdout, _ := local.RunCommand("ufw status numbered | grep -v \"(v6)\"")
+	var stdout string
+	if SSHActive {
+		if err := sshCheckup(); err != nil {
+			return []string{"Could not retrieve rules from remote host."}, nil
+		}
+		stdout, _ = ssh.CommandStream("ufw status | grep -v \"(v6)\"")
+	} else {
+		stdout, _ = local.RunCommand("ufw status | grep -v \"(v6)\"")
+	}
+
 	rules := parseUFWStatusForDeletion(stdout)
 	if len(rules) == 0 {
 		return []string{"No rules found."}, nil

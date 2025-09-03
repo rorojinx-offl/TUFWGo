@@ -143,7 +143,6 @@ func (m *TabModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					m.child = newErrorBoxModel("There was an error executing your command!", err.Error(), m.child)
 					return m, nil
 				}
-
 			}
 			// Show success message for 5 seconds
 			m.child = newSuccessBoxModel("UFW successfully added the following rule:", m.cmd, nil)
@@ -163,7 +162,13 @@ func (m *TabModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.child = newErrorBoxModel("There was an error deleting your rule!", err.Error(), m.child)
 			}
 			onYes := func() tea.Msg { return DeleteExecuted{} }
-			m.child = newConfirmModel("Are you sure you want to delete the following rule?", rule, m.child, onYes)
+			var note string
+			if SSHActive {
+				note = "Are you sure you want to delete the following rule? This will be executed on the remote client!"
+			} else {
+				note = "Are you sure you want to delete the following rule?"
+			}
+			m.child = newConfirmModel(note, rule, m.child, onYes)
 			return m, nil
 		case DeleteExecuted:
 			_, err := local.CommandConversation(m.cmd, "y\n")
