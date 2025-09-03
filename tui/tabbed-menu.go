@@ -110,11 +110,26 @@ func (m *TabModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, nil
 
 		case FormSubmitted:
-			_, err := local.RunCommand(m.cmd)
+			var err error
+			if SSHActive {
+				if err = sshCheckup(); err != nil {
+					m.child = newErrorBoxModel("Couldn't connect via SSH!", fmt.Sprint("Unable to connect to SSH server: ", err), m.child)
+					return m, nil
+				}
+				/*_,err = ssh.CommandStream(m.cmd)
+				if err != nil {
+					m.child = newErrorBoxModel("There was an error executing your command!", err.Error(), m.child)
+					return m, nil
+				}*/
+				m.child = newSuccessBoxModel("Remote command channel worked!", m.cmd, m.child)
+				m.toastUntil = time.Now().Add(5 * time.Second)
+				return m, tea.Tick(time.Until(m.toastUntil), func(time.Time) tea.Msg { return clearToast{} })
+			}
+			/*_, err = local.RunCommand(m.cmd)
 			if err != nil {
 				m.child = newErrorBoxModel("There was an error executing your command!", err.Error(), m.child)
 				return m, nil
-			}
+			}*/
 			// Show success message for 5 seconds
 			m.child = newSuccessBoxModel("UFW successfully added the following rule:", m.cmd, nil)
 			m.toastUntil = time.Now().Add(5 * time.Second)
@@ -251,12 +266,12 @@ func (m *TabModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func sshCheckup() error {
 	if ssh.GlobalClient == nil {
-		return errors.New("SSH Mode is not active!")
+		return errors.New("SSH Mode is not active")
 	}
 
 	ok, _, err := ssh.GlobalClient.SendRequest("keepalive@openssh.com", true, nil)
 	if err != nil || !ok {
-		return errors.New("SSH Connection Failed!")
+		return errors.New("SSH Connection Failed")
 	}
 	return nil
 }
