@@ -37,14 +37,14 @@ func runTUIMode() {
 		}
 		clientID, pubB64, priv, created, err := auth.EnsureControllerKey(label)
 		if created {
+			fmt.Println("Controller ID:", clientID)
+			fmt.Println("Public Key:", pubB64)
 			out, err := ssh.CommandStream(fmt.Sprintf("tufwgo-auth add-controller --pub %q --label %q", pubB64, label))
 			if err != nil {
 				fmt.Println("Failed to add new controller to allowlist:", err, "\n", out)
 				return
 			}
 			fmt.Println("New controller key created.")
-			fmt.Println("Controller ID:", clientID)
-			fmt.Println("Public Key:", pubB64)
 		}
 		err = auth.AuthenticateOverSSH(client, clientID, "1.0", "tufwgo-auth", priv)
 		if err != nil {
