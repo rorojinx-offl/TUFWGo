@@ -44,7 +44,7 @@ func EnsureControllerKey(label string) (string, string, ed25519.PrivateKey, bool
 
 func deriveIDsFromPrivKey(priv ed25519.PrivateKey) (clientID, pubKeyB64 string, pub ed25519.PublicKey, err error) {
 	switch n := len(priv); {
-	case n == ed25519.PublicKeySize:
+	case n == ed25519.PrivateKeySize:
 		// ok
 	case n == ed25519.SeedSize:
 		priv = ed25519.NewKeyFromSeed(priv)
