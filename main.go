@@ -36,6 +36,10 @@ func runTUIMode() {
 			return
 		}
 		clientID, pubB64, priv, created, err := auth.EnsureControllerKey(label)
+		if err != nil {
+			fmt.Println("Failed to load or create controller key:", err)
+			return
+		}
 		if created {
 			fmt.Println("Controller ID:", clientID)
 			fmt.Println("Public Key:", pubB64)
