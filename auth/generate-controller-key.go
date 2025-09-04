@@ -120,33 +120,6 @@ func loadControllerPrivKey() (ed25519.PrivateKey, error) {
 		return nil, fmt.Errorf("bad private key size: %d", len(b64))
 	}
 	return b64, nil
-
-	/*path := assertUserKeyPath(controllerKeyPath)
-	data, err := os.ReadFile(path)
-	if err != nil {
-		return nil, err
-	}
-	var raw struct {
-		Private string `json:"private_b64"`
-	}
-	if err := json.Unmarshal(data, &raw); err != nil {
-		return nil, err
-	}
-	s := strings.TrimSpace(raw.Private)
-	s = strings.TrimPrefix(strings.ToLower(s), "ed25519:") // tolerate prefix
-	buf, err := base64.StdEncoding.DecodeString(s)
-	if err != nil {
-		return nil, fmt.Errorf("decode private_b64: %w", err)
-	}
-
-	switch len(buf) {
-	case ed25519.SeedSize: // 32 -> expand
-		return ed25519.NewKeyFromSeed(buf), nil
-	case ed25519.PrivateKeySize: // 64 -> OK
-		return ed25519.PrivateKey(buf), nil
-	default:
-		return nil, fmt.Errorf("unexpected ed25519 private key length: got %d (want 32 or 64)", len(buf))
-	}*/
 }
 
 func assertUserKeyPath(rel string) string {
