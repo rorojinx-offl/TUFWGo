@@ -20,7 +20,7 @@ import (
 
 const (
 	protoTag      = "TUFWGO-AUTH\x00"
-	allowListPath = "/root/.config/tufwgo/authorised_controllers.json"
+	allowListPath = ".config/tufwgo/authorised_controllers.json"
 	clockSkew     = 120 * time.Second
 )
 
@@ -186,7 +186,7 @@ func buildMessage(nonce []byte, hostID, clientID string, ts int64) []byte {
 }
 
 func lookUpControllerPubKey(clientID string) (ed25519.PublicKey, error) {
-	path := allowListPath
+	path := assertUserFilepath(allowListPath)
 	file, err := os.Open(path)
 	if err != nil {
 		return nil, fmt.Errorf("cannot open allow list file: %w", err)
@@ -240,7 +240,7 @@ func getHostID() string {
 }
 
 // Below will be helper functions to write to the allow list file
-const allowlistRelPath = "/root/.config/tufwgo/authorised_controllers.json"
+const allowlistRelPath = ".config/tufwgo/authorised_controllers.json"
 
 func allowlistPath() string {
 	home, _ := os.UserHomeDir()
@@ -248,7 +248,7 @@ func allowlistPath() string {
 }
 
 func loadAllowlist() (*allowListFile, error) {
-	p := allowlistRelPath
+	p := allowlistPath()
 	f, err := os.Open(p)
 	if errors.Is(err, os.ErrNotExist) {
 		return &allowListFile{Version: 1}, nil
