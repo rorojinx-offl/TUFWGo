@@ -98,7 +98,7 @@ func generateControllerID(label string) (clientID string, pubKeyB64 string, priv
 }
 
 func loadControllerPrivKey() (ed25519.PrivateKey, error) {
-	/*path := assertUserKeyPath(controllerKeyPath)
+	path := assertUserKeyPath(controllerKeyPath)
 	data, err := os.ReadFile(path)
 	if err != nil {
 		return nil, err
@@ -119,9 +119,9 @@ func loadControllerPrivKey() (ed25519.PrivateKey, error) {
 	if len(b64) != ed25519.PrivateKeySize {
 		return nil, fmt.Errorf("bad private key size: %d", len(b64))
 	}
-	return b64, nil*/
+	return b64, nil
 
-	path := assertUserKeyPath(controllerKeyPath)
+	/*path := assertUserKeyPath(controllerKeyPath)
 	data, err := os.ReadFile(path)
 	if err != nil {
 		return nil, err
@@ -146,7 +146,7 @@ func loadControllerPrivKey() (ed25519.PrivateKey, error) {
 		return ed25519.PrivateKey(buf), nil
 	default:
 		return nil, fmt.Errorf("unexpected ed25519 private key length: got %d (want 32 or 64)", len(buf))
-	}
+	}*/
 }
 
 func assertUserKeyPath(rel string) string {
