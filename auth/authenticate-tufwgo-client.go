@@ -15,14 +15,21 @@ import (
 )
 
 type hello struct {
-	Type, ClientID, ClientVersion, Algo string
+	Type          string `json:"type"`
+	ClientID      string `json:"client_id"`
+	ClientVersion string `json:"client_version"`
+	Algo          string `json:"algo"`
 }
 type challenge struct {
-	Type, HostID, NonceB64 string
+	Type     string `json:"type"`
+	HostID   string `json:"host_id"`
+	NonceB64 string `json:"nonce_base64"`
 }
 type proof struct {
-	Type, ClientID, SigB64 string
-	TSUnix                 int64
+	Type     string `json:"type"`
+	ClientID string `json:"client_id"`
+	TSUnix   int64  `json:"ts_unix"`
+	SigB64   string `json:"sig_base64"`
 }
 type ok struct{ Type string }
 type er struct {

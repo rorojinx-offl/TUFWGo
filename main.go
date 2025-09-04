@@ -1,6 +1,7 @@
 package main
 
 import (
+	"TUFWGo/auth"
 	"TUFWGo/system/local"
 	"TUFWGo/system/ssh"
 	"TUFWGo/tui"
@@ -28,6 +29,24 @@ func runTUIMode() {
 			fmt.Println("SSH Connection Failed:", err)
 			return
 		}
+
+		label, err := local.RunCommand("uname -snrm")
+		if err != nil {
+			_ = fmt.Errorf("unable to get system name to generate controller ID: %w", err)
+			return
+		}
+		clientID, pubB64, priv, created, err := auth.EnsureControllerKey(label)
+		if created {
+			fmt.Println("New controller key created.")
+			fmt.Println("Controller ID:", clientID)
+			fmt.Println("Public Key:", pubB64)
+		}
+		err = auth.AuthenticateOverSSH(client, clientID, "1.0", "tufwgo-auth", priv)
+		if err != nil {
+			fmt.Println("Authentication Failed:", err)
+			return
+		}
+
 		ssh.SetSSHStatus(true)
 		tui.RunTUI()
 		defer client.Close()
