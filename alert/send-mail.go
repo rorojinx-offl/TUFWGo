@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"github.com/sendgrid/sendgrid-go"
 	"github.com/sendgrid/sendgrid-go/helpers/mail"
-	"log"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -57,7 +56,7 @@ func loadEmails() ([]string, error) {
 		}
 		low := strings.ToLower(line)
 		if !emailRegex.MatchString(low) {
-			log.Printf("WARNING: Skipping invalid email: %s", line)
+			fmt.Printf("WARNING: Skipping invalid email: %s", line)
 			continue
 		}
 
