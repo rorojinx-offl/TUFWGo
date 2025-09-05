@@ -3,7 +3,6 @@ package alert
 import (
 	"bufio"
 	"context"
-	"errors"
 	"fmt"
 	"github.com/sendgrid/sendgrid-go"
 	"github.com/sendgrid/sendgrid-go/helpers/mail"
@@ -19,9 +18,9 @@ var emailRegex = regexp.MustCompile(`^[^\s@]+@[^\s@]+\.[^\s@]+$`)
 const path = "~/.config/tufwgo/emails.txt"
 
 func loadEmails() ([]string, error) {
-	if _, err := os.Stat(path); errors.Is(err, os.ErrNotExist) {
+	/*if _, err := os.Stat(path); errors.Is(err, os.ErrNotExist) {
 		return nil, fmt.Errorf("email list not found at: %w", err)
-	}
+	}*/
 	file, err := os.Open(path)
 	if err != nil {
 		return nil, fmt.Errorf("unable to open file: %w", err)
