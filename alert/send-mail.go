@@ -3,11 +3,13 @@ package alert
 import (
 	"bufio"
 	"context"
+	"errors"
 	"fmt"
 	"github.com/sendgrid/sendgrid-go"
 	"github.com/sendgrid/sendgrid-go/helpers/mail"
 	"log"
 	"os"
+	"path/filepath"
 	"regexp"
 	"strings"
 	"time"
@@ -15,13 +17,19 @@ import (
 
 var emailRegex = regexp.MustCompile(`^[^\s@]+@[^\s@]+\.[^\s@]+$`)
 
-const path = "~/.config/tufwgo/emails.txt"
+const path = ".config/tufwgo/emails.txt"
 
 func loadEmails() ([]string, error) {
-	/*if _, err := os.Stat(path); errors.Is(err, os.ErrNotExist) {
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return nil, fmt.Errorf("unable to determine user home directory: %w", err)
+	}
+	properPath := filepath.Join(home, path)
+
+	if _, err = os.Stat(properPath); errors.Is(err, os.ErrNotExist) {
 		return nil, fmt.Errorf("email list not found at: %w", err)
-	}*/
-	file, err := os.Open(path)
+	}
+	file, err := os.Open(properPath)
 	if err != nil {
 		return nil, fmt.Errorf("unable to open file: %w", err)
 	}
