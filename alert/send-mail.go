@@ -45,13 +45,21 @@ func loadEmails() ([]string, error) {
 			continue
 		}
 		if strings.HasPrefix(line, "from:") {
+			var tempFrom string
 			parts := strings.SplitN(line, ":", 2)
 			if len(parts) == 2 {
-				from = strings.TrimSpace(parts[1])
-				fmt.Println(from)
+				tempFrom = strings.TrimSpace(parts[1])
 			} else {
 				fmt.Println("Invalid from")
+				continue
 			}
+
+			lowFrom := strings.ToLower(tempFrom)
+			if !emailRegex.MatchString(lowFrom) {
+				fmt.Printf("WARNING: Skipping invalid from email: %s\n", tempFrom)
+				continue
+			}
+			from = lowFrom
 			continue
 		}
 		low := strings.ToLower(line)
@@ -102,7 +110,8 @@ func SendMail() {
 		return
 	}
 
-	from := mail.NewEmail("TUFWGo Alert Manager", "alerts@em2695.tufwgo.store")
+	//fromTemp := mail.NewEmail("TUFWGo Alert Manager", "alerts@em2695.tufwgo.store")
+	sender := mail.NewEmail("TUFWGo Alert Manager", from)
 	subject := "[TUFWGo] Rule Added - Allow TCP 22 from 192.168.1.1"
 	plainTextContent := `Hello,
 	An action was performed on your firewall via TUFWGo.
@@ -129,7 +138,7 @@ func SendMail() {
 	const batchSize = 500
 	for _, batch := range batches(recips, batchSize) {
 		msg := mail.NewV3Mail()
-		msg.SetFrom(from)
+		msg.SetFrom(sender)
 		msg.Subject = subject
 
 		p := mail.NewPersonalization()
