@@ -19,7 +19,8 @@ func main() {
 	//samples.Input()
 	//tui.RunForm()
 	//alert.SendSampleMail()
-	alert.TestEmailData()
+	var e alert.EmailInfo
+	e.TestEmailData()
 }
 
 func runTUIMode() {

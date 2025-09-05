@@ -151,12 +151,7 @@ TUFWGo Alert Manager
 	}
 }
 
-func TestEmailData() {
-	var e EmailInfo
-	cmd, err := e.Rule.ParseForm()
-	if err != nil {
-		cmd = "N/A"
-	}
+func (e *EmailInfo) TestEmailData() {
 
 	e.Timestamp = time.Now().String()
 	e.ExecutedBy = os.Getenv("USER")
@@ -177,6 +172,11 @@ func TestEmailData() {
 		Protocol:   "",
 		AppProfile: "",
 	}
+	cmd, err := e.Rule.ParseForm()
+	if err != nil {
+		cmd = "N/A"
+	}
+	e.Command = cmd
 
 	e.SendMail("Rule Added", cmd, e.Rule)
 }
