@@ -50,6 +50,29 @@ func (e *EmailInfo) prepareEmailInfo(action, cmd string, rule *ufw.Form) {
 }
 
 func (e *EmailInfo) prepareMessage() string {
+	if e.Rule == nil {
+		return fmt.Sprintf(`
+Hello,
+An action was performed on your firewall via TUFWGo.
+📌 Action: %s
+📌 Timestamp: %s
+📌 Executed By: %s
+📌 Hostname: %s
+📌 Local IP: %s
+
+🏷️ Command Executed:
+	%s
+
+TUFWGo Alert Manager
+`,
+			e.Action,
+			e.Timestamp,
+			e.ExecutedBy,
+			e.Hostname,
+			e.LocalIP,
+			e.Command)
+	}
+
 	var appProfile string
 	var direction string
 	var iface string
