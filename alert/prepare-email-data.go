@@ -182,5 +182,17 @@ func (e *EmailInfo) TestEmailData() {
 	}
 	e.Command = cmd*/
 
-	e.SendMail("Rule Deleted", "ufw delete 3", nil)
+	e.Timestamp = time.Now().String()
+	e.ExecutedBy = os.Getenv("USER")
+	e.Hostname = os.Getenv("hostname")
+	localIP, err := getLocalIP()
+	if err != nil {
+		e.LocalIP = "unknown"
+	} else {
+		e.LocalIP = localIP
+	}
+	e.Rule = nil
+	cmd := "ufw delete 3"
+
+	e.SendMail("Rule Deleted", cmd, e.Rule)
 }
