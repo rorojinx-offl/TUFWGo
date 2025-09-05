@@ -151,7 +151,8 @@ TUFWGo Alert Manager
 	}
 }
 
-func (e *EmailInfo) TestEmailData() {
+func TestEmailData() {
+	var e EmailInfo
 	cmd, err := e.Rule.ParseForm()
 	if err != nil {
 		cmd = "N/A"
