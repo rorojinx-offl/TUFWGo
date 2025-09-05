@@ -157,8 +157,7 @@ TUFWGo Alert Manager
 }
 
 func (e *EmailInfo) TestEmailData() {
-
-	e.Timestamp = time.Now().String()
+	/*e.Timestamp = time.Now().String()
 	e.ExecutedBy = os.Getenv("USER")
 	e.Hostname = os.Getenv("hostname")
 	localIP, err := getLocalIP()
@@ -181,7 +180,7 @@ func (e *EmailInfo) TestEmailData() {
 	if err != nil {
 		cmd = "N/A"
 	}
-	e.Command = cmd
+	e.Command = cmd*/
 
-	e.SendMail("Rule Added", cmd, e.Rule)
+	e.SendMail("Rule Deleted", "ufw delete 3", e.Rule)
 }
