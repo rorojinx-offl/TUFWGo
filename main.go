@@ -1,7 +1,6 @@
 package main
 
 import (
-	"TUFWGo/alert"
 	"TUFWGo/auth"
 	"TUFWGo/system/local"
 	"TUFWGo/system/ssh"
@@ -15,12 +14,12 @@ var sshMode = flag.Bool("ssh", false, "Run in SSH mode")
 
 func main() {
 	local.RequireRoot()
-	//runTUIMode()
+	runTUIMode()
 	//samples.Input()
 	//tui.RunForm()
 	//alert.SendSampleMail()
-	var e alert.EmailInfo
-	e.TestEmailData()
+	/*var e alert.EmailInfo
+	e.TestEmailData()*/
 }
 
 func runTUIMode() {
