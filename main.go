@@ -14,6 +14,7 @@ var skipTermCheck = flag.Bool("skip-term-check", false, "Skip the terminal size 
 var sshMode = flag.Bool("ssh", false, "Run in SSH mode")
 
 func main() {
+	local.RequireRoot()
 	//runTUIMode()
 	//samples.Input()
 	//tui.RunForm()

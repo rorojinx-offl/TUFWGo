@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"os"
 	"os/exec"
 	"strings"
 )
@@ -53,4 +54,11 @@ func CommandConversation(command, reply string) (string, error) {
 		return "", err
 	}
 	return out, nil
+}
+
+func RequireRoot() {
+	if os.Geteuid() != 0 {
+		fmt.Println("This command requires root/sudo privileges! (try: sudo " + os.Args[0] + ")")
+		os.Exit(77)
+	}
 }
