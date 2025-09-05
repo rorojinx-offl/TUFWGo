@@ -33,7 +33,12 @@ func (e *EmailInfo) prepareEmailInfo(action, cmd string, rule *ufw.Form) {
 	e.Action = action
 	e.Timestamp = time.Now().String()
 	e.ExecutedBy = os.Getenv("USER")
-	e.Hostname = os.Getenv("hostname")
+	hostname, err := os.Hostname()
+	if err != nil {
+		e.Hostname = "unknown"
+	} else {
+		e.Hostname = hostname
+	}
 	localIP, err := getLocalIP()
 	if err != nil {
 		e.LocalIP = "unknown"
