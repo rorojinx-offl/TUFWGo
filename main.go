@@ -18,7 +18,8 @@ func main() {
 	//runTUIMode()
 	//samples.Input()
 	//tui.RunForm()
-	alert.SendSampleMail()
+	//alert.SendSampleMail()
+	alert.SendMail()
 }
 
 func runTUIMode() {
