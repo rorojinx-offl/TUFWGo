@@ -16,6 +16,7 @@ import (
 )
 
 var emailRegex = regexp.MustCompile(`^[^\s@]+@[^\s@]+\.[^\s@]+$`)
+var from string
 
 const path = ".config/tufwgo/emails.txt"
 
@@ -44,11 +45,22 @@ func loadEmails() ([]string, error) {
 		if line == "" || strings.HasPrefix(line, "#") {
 			continue
 		}
+		if strings.HasPrefix(line, "from:") {
+			parts := strings.SplitN(line, ":", 2)
+			if len(parts) == 2 {
+				from = strings.TrimSpace(parts[1])
+				fmt.Println(from)
+			} else {
+				fmt.Println("Invalid from")
+			}
+			continue
+		}
 		low := strings.ToLower(line)
 		if !emailRegex.MatchString(low) {
 			log.Printf("WARNING: Skipping invalid email: %s", line)
 			continue
 		}
+
 		if _, ok := seen[low]; ok {
 			continue
 		}
