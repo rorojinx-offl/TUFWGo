@@ -53,6 +53,8 @@ type successBoxModel struct {
 
 type clearToast struct{}
 
+var structPass ufw.Form
+
 func (m *TabModel) Init() tea.Cmd {
 	return nil
 }
@@ -76,7 +78,7 @@ func (m *TabModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, nil
 		case FormConfirmation:
 			formStruct := child.Data
-			structPass := ufw.Form{
+			structPass = ufw.Form{
 				Action:     formStruct.Action,
 				Direction:  formStruct.Direction,
 				Interface:  formStruct.Interface,
