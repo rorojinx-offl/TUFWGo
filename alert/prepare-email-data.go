@@ -182,5 +182,5 @@ func (e *EmailInfo) TestEmailData() {
 	}
 	e.Command = cmd*/
 
-	e.SendMail("Rule Deleted", "ufw delete 3", e.Rule)
+	e.SendMail("Rule Deleted", "ufw delete 3", nil)
 }
