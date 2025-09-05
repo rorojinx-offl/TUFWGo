@@ -12,24 +12,24 @@ func SendSampleMail() {
 	from := mail.NewEmail("Alert Manager", "alerts@em2695.tufwgo.store")
 	subject := "[TUFWGo] Rule Added - Allow TCP 22 from 192.168.1.1"
 	to := mail.NewEmail("Rohit Gurunathan", "rohitgurunathan@gmail.com")
-	plainTextContent := `Hello,a
-	An action was performed on your firewall via TUFWGo.
-	📌 Action: Rule Added
-	📌 Status: Success
-	📌 Timestamp: 2024-10-05 14:30:00
-	📌 Executed By: root
-	📌 Hostname: raspberrypi
-	📌 Rule Details:
-		- Action: Allow
-		- Direction: Inbound
-		- From: 192.168.1.1
-		- To: Any
-		- Port: 22
-		- Protocol: TCP
-		- App Profile: N/A
+	plainTextContent := `Hello,\n
+	An action was performed on your firewall via TUFWGo.\n
+	📌 Action: Rule Added\n
+	📌 Status: Success\n
+	📌 Timestamp: 2024-10-05 14:30:00\n
+	📌 Executed By: root\n
+	📌 Hostname: raspberrypi\n
+	📌 Rule Details:\n\t
+		- Action: Allow\n\t
+		- Direction: Inbound\n\t
+		- From: 192.168.1.1\n\t
+		- To: Any\n\t
+		- Port: 22\n\t
+		- Protocol: TCP\n\t
+		- App Profile: N/A\n\n
 
-	🏷️ Command Executed:
-		ufw allow from 192.168.1.5 to any port 22 proto tcp
+	🏷️ Command Executed:\n\t
+		ufw allow from 192.168.1.5 to any port 22 proto tcp\n\n
 
 	TUFWGo Alert Manager
 	`
