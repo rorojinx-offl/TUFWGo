@@ -11,7 +11,7 @@ import (
 func SendSampleMail() {
 	from := mail.NewEmail("Alert Manager", "alerts@em2695.tufwgo.store")
 	subject := "[TUFWGo] Rule Added - Allow TCP 22 from 192.168.1.1"
-	to := mail.NewEmail("Rohit Gurunathan", "rohitgurunathan@gmil.com")
+	to := mail.NewEmail("Rohit Gurunathan", "rohitgurunathan@gmail.com")
 	plainTextContent := `Hello,a
 	An action was performed on your firewall via TUFWGo.
 	📌 Action: Rule Added
