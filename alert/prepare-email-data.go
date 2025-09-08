@@ -53,32 +53,6 @@ func (e *EmailInfo) prepareEmailInfo(action, cmd string, rule *ufw.Form) {
 }
 
 func (e *EmailInfo) prepareMessage() string {
-
-	var message string
-	/*if e.Rule == nil {
-			message = fmt.Sprintf(`
-	Hello,
-	An action was performed on your firewall via TUFWGo.
-	📌 Action: %s
-	📌 Timestamp: %s
-	📌 Executed By: %s
-	📌 Hostname: %s
-	📌 Local IP: %s
-
-	🏷️ Command Executed:
-		%s
-
-	TUFWGo Alert Manager
-	`,
-				e.Action,
-				e.Timestamp,
-				e.ExecutedBy,
-				e.Hostname,
-				e.LocalIP,
-				e.Command)
-			return message
-		}*/
-
 	var appProfile string
 	var direction string
 	var iface string
@@ -123,70 +97,6 @@ func (e *EmailInfo) prepareMessage() string {
 		protocol = e.Rule.Protocol
 	}
 
-	if e.Action == "Rule Added" {
-		message = fmt.Sprintf(`
-Hello,
-An action was performed on your firewall via TUFWGo.
-📌 Action: %s
-📌 Timestamp: %s
-📌 Executed By: %s
-📌 Hostname: %s
-📌 Local IP: %s
-📌 Rule Details:
-	- Action: %s
-	- Direction: %s
-	- Interface: %s
-	- From: %s
-	- To: %s
-	- Port: %s
-	- Protocol: %s
-	- App Profile: %s
-
-🏷️ Command Executed:
-	%s
-
-TUFWGo Alert Manager
-`,
-			e.Action,
-			e.Timestamp,
-			e.ExecutedBy,
-			e.Hostname,
-			e.LocalIP,
-			e.Rule.Action,
-			direction,
-			iface,
-			fromIP,
-			toIP,
-			port,
-			protocol,
-			appProfile,
-			e.Command)
-	} else if e.Action == "Rule Deleted" && e.Rule == nil {
-		message = fmt.Sprintf(`
-Hello,
-An action was performed on your firewall via TUFWGo.
-📌 Action: %s
-📌 Timestamp: %s
-📌 Executed By: %s
-📌 Hostname: %s
-📌 Local IP: %s
-📌 Deleted Rule Details: %s
-
-🏷️ Command Executed:
-	%s
-
-TUFWGo Alert Manager
-`,
-			e.Action,
-			e.Timestamp,
-			e.ExecutedBy,
-			e.Hostname,
-			e.LocalIP,
-			DeleteRule,
-			e.Command)
-		return message
-	}
-
 	if ssh.GetSSHStatus() {
 		remoteIP := ssh.GlobalHost
 		remoteUser, err := ssh.CommandStream("whoami")
@@ -196,7 +106,7 @@ TUFWGo Alert Manager
 		}
 		parsedSSH := fmt.Sprintf("%s@%s", remoteUser, remoteHostname)
 		if e.Action == "Rule Added" {
-			message = fmt.Sprintf(`
+			return fmt.Sprintf(`
 Hello,
 An action was performed on your firewall via TUFWGo.
 📌 Action: %s
@@ -237,7 +147,7 @@ TUFWGo Alert Manager
 				appProfile,
 				e.Command)
 		} else {
-			message = fmt.Sprintf(`
+			return fmt.Sprintf(`
 Hello,
 An action was performed on your firewall via TUFWGo.
 📌 Action: %s
@@ -262,7 +172,92 @@ TUFWGo Alert Manager
 				e.Command)
 		}
 	}
-	return message
+
+	if e.Action == "Rule Deleted" && e.Rule == nil {
+		return fmt.Sprintf(`
+Hello,
+An action was performed on your firewall via TUFWGo.
+📌 Action: %s
+📌 Timestamp: %s
+📌 Executed By: %s
+📌 Hostname: %s
+📌 Local IP: %s
+📌 Deleted Rule Details: %s
+
+🏷️ Command Executed:
+	%s
+
+TUFWGo Alert Manager
+`,
+			e.Action,
+			e.Timestamp,
+			e.ExecutedBy,
+			e.Hostname,
+			e.LocalIP,
+			DeleteRule,
+			e.Command)
+	}
+
+	if e.Action == "Rule Added" {
+		return fmt.Sprintf(`
+Hello,
+An action was performed on your firewall via TUFWGo.
+📌 Action: %s
+📌 Timestamp: %s
+📌 Executed By: %s
+📌 Hostname: %s
+📌 Local IP: %s
+📌 Rule Details:
+	- Action: %s
+	- Direction: %s
+	- Interface: %s
+	- From: %s
+	- To: %s
+	- Port: %s
+	- Protocol: %s
+	- App Profile: %s
+
+🏷️ Command Executed:
+	%s
+
+TUFWGo Alert Manager
+`,
+			e.Action,
+			e.Timestamp,
+			e.ExecutedBy,
+			e.Hostname,
+			e.LocalIP,
+			e.Rule.Action,
+			direction,
+			iface,
+			fromIP,
+			toIP,
+			port,
+			protocol,
+			appProfile,
+			e.Command)
+	} else {
+		return fmt.Sprintf(`
+Hello,
+An action was performed on your firewall via TUFWGo.
+📌 Action: %s
+📌 Timestamp: %s
+📌 Executed By: %s
+📌 Hostname: %s
+📌 Local IP: %s
+
+🏷️ Command Executed:
+	%s
+
+TUFWGo Alert Manager
+	`,
+			e.Action,
+			e.Timestamp,
+			e.ExecutedBy,
+			e.Hostname,
+			e.LocalIP,
+			e.Command)
+	}
 }
 
 func (e *EmailInfo) TestEmailData() {
