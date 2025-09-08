@@ -51,13 +51,6 @@ func (e *EmailInfo) prepareEmailInfo(action, cmd string, rule *ufw.Form) {
 }
 
 func (e *EmailInfo) prepareMessage() string {
-	remoteIP := ssh.GlobalHost
-	remoteUser, err := ssh.CommandStream("whoami")
-	remoteHostname, err := ssh.CommandStream("echo $hostname")
-	if err != nil {
-		fmt.Println("WARNING: Unable to get remote user or hostname:", err)
-	}
-	parsedSSH := fmt.Sprintf("%s@%s", remoteUser, remoteHostname)
 
 	var message string
 	if e.Rule == nil {
@@ -189,6 +182,13 @@ TUFWGo Alert Manager
 	}
 
 	if ssh.GetSSHStatus() {
+		remoteIP := ssh.GlobalHost
+		remoteUser, err := ssh.CommandStream("whoami")
+		remoteHostname, err := ssh.CommandStream("echo $hostname")
+		if err != nil {
+			fmt.Println("WARNING: Unable to get remote user or hostname:", err)
+		}
+		parsedSSH := fmt.Sprintf("%s@%s", remoteUser, remoteHostname)
 		if e.Action == "Rule Added" {
 			message = fmt.Sprintf(`
 Hello,
