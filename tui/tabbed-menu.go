@@ -1,6 +1,7 @@
 package tui
 
 import (
+	"TUFWGo/alert"
 	"TUFWGo/system/local"
 	"TUFWGo/system/ssh"
 	"TUFWGo/ufw"
@@ -54,6 +55,7 @@ type successBoxModel struct {
 type clearToast struct{}
 
 var structPass ufw.Form
+var emailInfo *alert.EmailInfo
 
 func (m *TabModel) Init() tea.Cmd {
 	return nil
@@ -146,6 +148,10 @@ func (m *TabModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					return m, nil
 				}
 			}
+
+			//Send email alert to admins
+			emailInfo.SendMail("Rule Added", m.cmd, &structPass)
+
 			// Show success message for 5 seconds
 			m.child = newSuccessBoxModel("UFW successfully added the following rule:", m.cmd, nil)
 			m.toastUntil = time.Now().Add(5 * time.Second)

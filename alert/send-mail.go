@@ -145,5 +145,6 @@ func (e *EmailInfo) SendMail(action, cmd string, rule *ufw.Form) {
 			fmt.Printf("send failed: status %d, body: %s\n", response.StatusCode, response.Body)
 			return
 		}
+		fmt.Printf("Email batch sent successfully to %d recipients, status code: %d\n", len(batch), response.StatusCode)
 	}
 }

@@ -1,6 +1,7 @@
 package alert
 
 import (
+	"TUFWGo/system/ssh"
 	"TUFWGo/ufw"
 	"fmt"
 	"net"
@@ -50,8 +51,17 @@ func (e *EmailInfo) prepareEmailInfo(action, cmd string, rule *ufw.Form) {
 }
 
 func (e *EmailInfo) prepareMessage() string {
+	remoteIP := ssh.GlobalHost
+	remoteUser, err := ssh.CommandStream("whoami")
+	remoteHostname, err := ssh.CommandStream("echo $hostname")
+	if err != nil {
+		fmt.Println("WARNING: Unable to get remote user or hostname:", err)
+	}
+	parsedSSH := fmt.Sprintf("%s@%s", remoteUser, remoteHostname)
+
+	var message string
 	if e.Rule == nil {
-		return fmt.Sprintf(`
+		message = fmt.Sprintf(`
 Hello,
 An action was performed on your firewall via TUFWGo.
 📌 Action: %s
@@ -118,7 +128,7 @@ TUFWGo Alert Manager
 	}
 
 	if e.Action == "Rule Added" {
-		return fmt.Sprintf(`
+		message = fmt.Sprintf(`
 Hello,
 An action was performed on your firewall via TUFWGo.
 📌 Action: %s
@@ -156,7 +166,7 @@ TUFWGo Alert Manager
 			appProfile,
 			e.Command)
 	} else {
-		return fmt.Sprintf(`
+		message = fmt.Sprintf(`
 Hello,
 An action was performed on your firewall via TUFWGo.
 📌 Action: %s
@@ -177,6 +187,76 @@ TUFWGo Alert Manager
 			e.LocalIP,
 			e.Command)
 	}
+
+	if ssh.GetSSHStatus() {
+		if e.Action == "Rule Added" {
+			message = fmt.Sprintf(`
+Hello,
+An action was performed on your firewall via TUFWGo.
+📌 Action: %s
+📌 Timestamp: %s
+📌 Executed By: %s
+📌 Hostname: %s
+📌 Local IP: %s
+📌 Machine Affected by SSH: %s -> %s
+📌 Rule Details:
+	- Action: %s
+	- Direction: %s
+	- Interface: %s
+	- From: %s
+	- To: %s
+	- Port: %s
+	- Protocol: %s
+	- App Profile: %s
+
+🏷️ Command Executed:
+	%s
+
+TUFWGo Alert Manager
+`,
+				e.Action,
+				e.Timestamp,
+				e.ExecutedBy,
+				e.Hostname,
+				e.LocalIP,
+				remoteIP,
+				parsedSSH,
+				e.Rule.Action,
+				direction,
+				iface,
+				fromIP,
+				toIP,
+				port,
+				protocol,
+				appProfile,
+				e.Command)
+		} else {
+			message = fmt.Sprintf(`
+Hello,
+An action was performed on your firewall via TUFWGo.
+📌 Action: %s
+📌 Timestamp: %s
+📌 Executed By: %s
+📌 Hostname: %s
+📌 Local IP: %s
+📌 Machine Affected by SSH: %s -> %s
+
+🏷️ Command Executed:
+	%s
+
+TUFWGo Alert Manager
+`,
+				e.Action,
+				e.Timestamp,
+				e.ExecutedBy,
+				e.Hostname,
+				e.LocalIP,
+				remoteIP,
+				parsedSSH,
+				e.Command)
+		}
+	}
+	return message
 }
 
 func (e *EmailInfo) TestEmailData() {
