@@ -19,6 +19,8 @@ type EmailInfo struct {
 	Command    string
 }
 
+var DeleteRule string
+
 func getLocalIP() (string, error) {
 	conn, err := net.Dial("udp", "8.8.8.8:80")
 	if err != nil {
@@ -159,7 +161,7 @@ TUFWGo Alert Manager
 			protocol,
 			appProfile,
 			e.Command)
-	} else {
+	} else if e.Action == "Rule Deleted" {
 		message = fmt.Sprintf(`
 Hello,
 An action was performed on your firewall via TUFWGo.
@@ -168,6 +170,7 @@ An action was performed on your firewall via TUFWGo.
 📌 Executed By: %s
 📌 Hostname: %s
 📌 Local IP: %s
+📌 Deleted Rule Details: %s
 
 🏷️ Command Executed:
 	%s
@@ -179,6 +182,7 @@ TUFWGo Alert Manager
 			e.ExecutedBy,
 			e.Hostname,
 			e.LocalIP,
+			DeleteRule,
 			e.Command)
 	}
 

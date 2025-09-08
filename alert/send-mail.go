@@ -115,7 +115,7 @@ func (e *EmailInfo) SendMail(action, cmd string, rule *ufw.Form) {
 
 	//fromTemp := mail.NewEmail("TUFWGo Alert Manager", "alerts@em2695.tufwgo.store")
 	sender := mail.NewEmail("TUFWGo Alert Manager", from)
-	subject := "[TUFWGo] Rule Added - Allow TCP 22 from 192.168.1.1"
+	subject := fmt.Sprintf("[TUFWGo] %s - %s", action, cmd)
 	plainTextContent := e.prepareMessage()
 
 	const batchSize = 500
@@ -132,6 +132,9 @@ func (e *EmailInfo) SendMail(action, cmd string, rule *ufw.Form) {
 		msg.AddPersonalizations(p)
 		msg.AddContent(mail.NewContent("text/plain", plainTextContent))
 		msg.Categories = append(msg.Categories, "ufw-alert")
+		/*urgencyHeader := msg.Headers
+		urgencyHeader["X-Priority"] = "1"
+		urgencyHeader["Importance"] = "High"*/
 
 		ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
 		defer cancel()
@@ -145,6 +148,6 @@ func (e *EmailInfo) SendMail(action, cmd string, rule *ufw.Form) {
 			fmt.Printf("send failed: status %d, body: %s\n", response.StatusCode, response.Body)
 			return
 		}
-		fmt.Printf("Email batch sent successfully to %d recipients, status code: %d\n", len(batch), response.StatusCode)
+		//fmt.Printf("Email batch sent successfully to %d recipients, status code: %d\n", len(batch), response.StatusCode)
 	}
 }

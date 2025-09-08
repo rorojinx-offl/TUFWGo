@@ -61,7 +61,7 @@ func DeleteList() DelListModel {
 	d.paginator = p
 	d.items = items
 	d.delete = textinput.New()
-	d.delete.Placeholder = "rule number e.g. 1"
+	d.delete.Placeholder = "Rule number e.g. 1"
 	d.delete.Prompt = ""
 	d.delete.CharLimit = 4
 	d.delete.Width = 20
@@ -110,7 +110,7 @@ func (d DelListModel) View() string {
 	}
 	b.WriteString("  " + d.paginator.View() + "\n\n")
 
-	deleteField := renderDeleteField("Enter a rule number to delete it", d.delete.View())
+	deleteField := renderDeleteField("Enter a Rule number to delete it", d.delete.View())
 	b.WriteString(deleteField + "\n")
 
 	b.WriteString("\n\n  ←/→ page • r: reload • esc: back\n")

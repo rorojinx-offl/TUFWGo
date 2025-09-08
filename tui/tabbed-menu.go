@@ -106,8 +106,8 @@ func (m *TabModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					note = "Are you sure you want to submit the following command? This will be executed on the remote client!"
 
 				} else {
-					// Warn user about automatic IPv6 rule addition
-					note = "Are you sure you want to submit the following command? This will be executed on the remote client!\n\nNote: Directly configuring an app profile will automatically add an IPv6 rule as well!"
+					// Warn user about automatic IPv6 Rule addition
+					note = "Are you sure you want to submit the following command? This will be executed on the remote client!\n\nNote: Directly configuring an app profile will automatically add an IPv6 Rule as well!"
 				}
 				m.child = newConfirmModel(note, cmd, m.child, onYes)
 				return m, nil
@@ -117,8 +117,8 @@ func (m *TabModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				note = "Are you sure you want to submit the following command?"
 
 			} else {
-				// Warn user about automatic IPv6 rule addition
-				note = "Are you sure you want to submit the following command?\n\nNote: Directly configuring an app profile will automatically add an IPv6 rule as well!"
+				// Warn user about automatic IPv6 Rule addition
+				note = "Are you sure you want to submit the following command?\n\nNote: Directly configuring an app profile will automatically add an IPv6 Rule as well!"
 			}
 			m.child = newConfirmModel(note, cmd, m.child, onYes)
 			return m, nil
@@ -138,7 +138,7 @@ func (m *TabModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					m.child = newErrorBoxModel("There was an error executing your command!", err.Error(), m.child)
 					return m, nil
 				}
-				m.child = newSuccessBoxModel("UFW rule added remotely:", m.cmd, m.child)
+				m.child = newSuccessBoxModel("UFW Rule added remotely:", m.cmd, m.child)
 				m.toastUntil = time.Now().Add(5 * time.Second)
 				return m, tea.Tick(time.Until(m.toastUntil), func(time.Time) tea.Msg { return clearToast{} })
 			} else {
@@ -154,13 +154,13 @@ func (m *TabModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			emailInfo.SendMail("Rule Added", m.cmd, &structPass)
 
 			// Show success message for 5 seconds
-			m.child = newSuccessBoxModel("UFW successfully added the following rule:", m.cmd, nil)
+			m.child = newSuccessBoxModel("UFW successfully added the following Rule:", m.cmd, nil)
 			m.toastUntil = time.Now().Add(5 * time.Second)
 			return m, tea.Tick(time.Until(m.toastUntil), func(time.Time) tea.Msg { return clearToast{} })
 		case DeleteConfirmation:
 			delInt, delError := child.number, child.error
 			if delError != nil {
-				m.child = newErrorBoxModel("There was an error deleting your rule!", delError.Error(), m.child)
+				m.child = newErrorBoxModel("There was an error deleting your Rule!", delError.Error(), m.child)
 				return m, nil
 			}
 			delCmd := "ufw delete " + strconv.Itoa(delInt)
@@ -168,14 +168,14 @@ func (m *TabModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			rule, err := ufw.ParseRuleFromNumber(delInt)
 			m.rule = rule
 			if err != nil {
-				m.child = newErrorBoxModel("There was an error deleting your rule!", err.Error(), m.child)
+				m.child = newErrorBoxModel("There was an error deleting your Rule!", err.Error(), m.child)
 			}
 			onYes := func() tea.Msg { return DeleteExecuted{} }
 			var note string
 			if ssh.GetSSHStatus() {
-				note = "Are you sure you want to delete the following rule? This will be executed on the remote client!"
+				note = "Are you sure you want to delete the following Rule? This will be executed on the remote client!"
 			} else {
-				note = "Are you sure you want to delete the following rule?"
+				note = "Are you sure you want to delete the following Rule?"
 			}
 			m.child = newConfirmModel(note, rule, m.child, onYes)
 			return m, nil
@@ -191,7 +191,7 @@ func (m *TabModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					m.child = newErrorBoxModel("There was an error executing your command!", err.Error(), m.child)
 					return m, nil
 				}
-				m.child = newSuccessBoxModel("UFW rule deleted remotely:", m.rule, nil)
+				m.child = newSuccessBoxModel("UFW Rule deleted remotely:", m.rule, nil)
 				m.toastUntil = time.Now().Add(5 * time.Second)
 				return m, tea.Tick(time.Until(m.toastUntil), func(time.Time) tea.Msg { return clearToast{} })
 			} else {
@@ -201,8 +201,14 @@ func (m *TabModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					return m, nil
 				}
 			}
+
+			//Send email alert to admins
+			emailInfo = &alert.EmailInfo{}
+			alert.DeleteRule = m.rule
+			emailInfo.SendMail("Rule Deleted", m.cmd, nil)
+
 			// Show success message for 5 seconds
-			m.child = newSuccessBoxModel("UFW successfully deleted the following rule:", m.rule, nil)
+			m.child = newSuccessBoxModel("UFW successfully deleted the following Rule:", m.rule, nil)
 			m.toastUntil = time.Now().Add(5 * time.Second)
 			return m, tea.Tick(time.Until(m.toastUntil), func(time.Time) tea.Msg { return clearToast{} })
 		case clearToast:
