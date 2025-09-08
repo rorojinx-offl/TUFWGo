@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net"
 	"os"
+	"strings"
 	"time"
 )
 
@@ -106,9 +107,12 @@ func (e *EmailInfo) prepareMessage() string {
 	if ssh.GetSSHStatus() {
 		remoteIP := ssh.GlobalHost
 		remoteUser, err := ssh.CommandStream("whoami")
+		if err != nil {
+			remoteUser = "Unknown"
+		}
 		remoteHostname, err := ssh.CommandStream("hostname")
 		if err != nil {
-			fmt.Println("WARNING: Unable to get remote user or hostname:", err)
+			remoteHostname = "Unknown"
 		}
 		parsedSSH := fmt.Sprintf("%s@%s", remoteUser, remoteHostname)
 
@@ -134,8 +138,8 @@ TUFWGo Alert Manager
 				e.ExecutedBy,
 				e.Hostname,
 				e.LocalIP,
-				remoteIP,
-				parsedSSH,
+				strings.TrimSpace(remoteIP),
+				strings.TrimSpace(parsedSSH),
 				DeleteRule,
 				e.Command)
 		}
@@ -169,8 +173,8 @@ TUFWGo Alert Manager
 				e.ExecutedBy,
 				e.Hostname,
 				e.LocalIP,
-				remoteIP,
-				parsedSSH,
+				strings.TrimSpace(remoteIP),
+				strings.TrimSpace(parsedSSH),
 				e.Rule.Action,
 				direction,
 				iface,
