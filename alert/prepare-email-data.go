@@ -38,7 +38,7 @@ func getLocalIP() (string, error) {
 
 func (e *EmailInfo) prepareEmailInfo(action, cmd string, rule *ufw.Form) {
 	e.Action = action
-	e.Timestamp = time.Now().String()
+	e.Timestamp = time.Now().Format("2006-01-02 15:04:05")
 	e.ExecutedBy = os.Getenv("USER")
 	hostname, err := os.Hostname()
 	if err != nil {
