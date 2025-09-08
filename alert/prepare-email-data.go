@@ -29,6 +29,10 @@ func getLocalIP() (string, error) {
 	defer conn.Close()
 
 	localAddr := conn.LocalAddr().(*net.UDPAddr).String()
+	//Extract only the IP part, excluding the port
+	if host, _, err := net.SplitHostPort(localAddr); err == nil {
+		localAddr = host
+	}
 	return localAddr, nil
 }
 
@@ -107,6 +111,34 @@ func (e *EmailInfo) prepareMessage() string {
 			fmt.Println("WARNING: Unable to get remote user or hostname:", err)
 		}
 		parsedSSH := fmt.Sprintf("%s@%s", remoteUser, remoteHostname)
+
+		if e.Action == "Rule Deleted" && e.Rule == nil {
+			return fmt.Sprintf(`
+Hello,
+An action was performed on your firewall via TUFWGo.
+📌 Action: %s
+📌 Timestamp: %s
+📌 Executed By: %s
+📌 Hostname: %s
+📌 Local IP: %s
+📌 Machine Affected by SSH: %s -> %s
+📌 Deleted Rule Details: %s
+
+🏷️ Command Executed:
+	%s
+
+TUFWGo Alert Manager
+`,
+				e.Action,
+				e.Timestamp,
+				e.ExecutedBy,
+				e.Hostname,
+				e.LocalIP,
+				remoteIP,
+				parsedSSH,
+				DeleteRule,
+				e.Command)
+		}
 		if e.Action == "Rule Added" {
 			return fmt.Sprintf(`
 Hello,
@@ -147,30 +179,6 @@ TUFWGo Alert Manager
 				port,
 				protocol,
 				appProfile,
-				e.Command)
-		} else {
-			return fmt.Sprintf(`
-Hello,
-An action was performed on your firewall via TUFWGo.
-📌 Action: %s
-📌 Timestamp: %s
-📌 Executed By: %s
-📌 Hostname: %s
-📌 Local IP: %s
-📌 Machine Affected by SSH: %s -> %s
-
-🏷️ Command Executed:
-	%s
-
-TUFWGo Alert Manager
-`,
-				e.Action,
-				e.Timestamp,
-				e.ExecutedBy,
-				e.Hostname,
-				e.LocalIP,
-				remoteIP,
-				parsedSSH,
 				e.Command)
 		}
 	}
