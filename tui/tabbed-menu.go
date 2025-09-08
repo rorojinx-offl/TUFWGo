@@ -139,6 +139,11 @@ func (m *TabModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					return m, nil
 				}
 				m.child = newSuccessBoxModel("UFW Rule added remotely:", m.cmd, m.child)
+
+				//Send email alert to admins
+				emailInfo = &alert.EmailInfo{}
+				emailInfo.SendMail("Rule Added", m.cmd, &structPass)
+
 				m.toastUntil = time.Now().Add(5 * time.Second)
 				return m, tea.Tick(time.Until(m.toastUntil), func(time.Time) tea.Msg { return clearToast{} })
 			} else {
