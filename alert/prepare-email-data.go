@@ -106,7 +106,7 @@ func (e *EmailInfo) prepareMessage() string {
 	if ssh.GetSSHStatus() {
 		remoteIP := ssh.GlobalHost
 		remoteUser, err := ssh.CommandStream("whoami")
-		remoteHostname, err := ssh.CommandStream("echo $hostname")
+		remoteHostname, err := ssh.CommandStream("hostname")
 		if err != nil {
 			fmt.Println("WARNING: Unable to get remote user or hostname:", err)
 		}
@@ -268,45 +268,4 @@ TUFWGo Alert Manager
 			e.LocalIP,
 			e.Command)
 	}
-}
-
-func (e *EmailInfo) TestEmailData() {
-	/*e.Timestamp = time.Now().String()
-	e.ExecutedBy = os.Getenv("USER")
-	e.Hostname = os.Getenv("hostname")
-	localIP, err := getLocalIP()
-	if err != nil {
-		e.LocalIP = "unknown"
-	} else {
-		e.LocalIP = localIP
-	}
-	e.Rule = &ufw.Form{
-		Action:     "allow",
-		Direction:  "",
-		Interface:  "eth0",
-		FromIP:     "192.168.1.1",
-		ToIP:       "",
-		Port:       "22",
-		Protocol:   "",
-		AppProfile: "",
-	}
-	cmd, err := e.Rule.ParseForm()
-	if err != nil {
-		cmd = "N/A"
-	}
-	e.Command = cmd*/
-
-	e.Timestamp = time.Now().String()
-	e.ExecutedBy = os.Getenv("USER")
-	e.Hostname = os.Getenv("hostname")
-	localIP, err := getLocalIP()
-	if err != nil {
-		e.LocalIP = "unknown"
-	} else {
-		e.LocalIP = localIP
-	}
-	e.Rule = nil
-	cmd := "ufw delete 3"
-
-	e.SendMail("Rule Deleted", cmd, e.Rule)
 }

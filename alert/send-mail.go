@@ -1,6 +1,7 @@
 package alert
 
 import (
+	"TUFWGo/system/ssh"
 	"TUFWGo/ufw"
 	"bufio"
 	"context"
@@ -113,9 +114,15 @@ func (e *EmailInfo) SendMail(action, cmd string, rule *ufw.Form) {
 		return
 	}
 
-	//fromTemp := mail.NewEmail("TUFWGo Alert Manager", "alerts@em2695.tufwgo.store")
+	var remote string
+	if ssh.GetSSHStatus() {
+		remote = "over SSH"
+	} else {
+		remote = ""
+	}
+
 	sender := mail.NewEmail("TUFWGo Alert Manager", from)
-	subject := fmt.Sprintf("[TUFWGo] %s - %s", action, cmd)
+	subject := fmt.Sprintf("[TUFWGo] %s %s - %s", action, remote, cmd)
 	plainTextContent := e.prepareMessage()
 
 	const batchSize = 500
