@@ -61,40 +61,42 @@ func (e *EmailInfo) prepareMessage() string {
 	var port string
 	var protocol string
 
-	if e.Rule.AppProfile == "" {
-		appProfile = "N/A"
-	} else {
-		appProfile = e.Rule.AppProfile
-	}
-	if e.Rule.Direction == "" {
-		direction = "N/A"
-	} else {
-		direction = e.Rule.Direction
-	}
-	if e.Rule.Interface == "" {
-		iface = "N/A"
-	} else {
-		iface = e.Rule.Interface
-	}
-	if e.Rule.FromIP == "" {
-		fromIP = "N/A"
-	} else {
-		fromIP = e.Rule.FromIP
-	}
-	if e.Rule.ToIP == "" {
-		toIP = "any"
-	} else {
-		toIP = e.Rule.ToIP
-	}
-	if e.Rule.Port == "" {
-		port = "N/A"
-	} else {
-		port = e.Rule.Port
-	}
-	if e.Rule.Protocol == "" {
-		protocol = "N/A"
-	} else {
-		protocol = e.Rule.Protocol
+	if e.Rule != nil {
+		if e.Rule.AppProfile == "" {
+			appProfile = "N/A"
+		} else {
+			appProfile = e.Rule.AppProfile
+		}
+		if e.Rule.Direction == "" {
+			direction = "N/A"
+		} else {
+			direction = e.Rule.Direction
+		}
+		if e.Rule.Interface == "" {
+			iface = "N/A"
+		} else {
+			iface = e.Rule.Interface
+		}
+		if e.Rule.FromIP == "" {
+			fromIP = "N/A"
+		} else {
+			fromIP = e.Rule.FromIP
+		}
+		if e.Rule.ToIP == "" {
+			toIP = "any"
+		} else {
+			toIP = e.Rule.ToIP
+		}
+		if e.Rule.Port == "" {
+			port = "N/A"
+		} else {
+			port = e.Rule.Port
+		}
+		if e.Rule.Protocol == "" {
+			protocol = "N/A"
+		} else {
+			protocol = e.Rule.Protocol
+		}
 	}
 
 	if ssh.GetSSHStatus() {
