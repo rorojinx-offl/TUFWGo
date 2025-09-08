@@ -150,6 +150,7 @@ func (m *TabModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 
 			//Send email alert to admins
+			emailInfo = &alert.EmailInfo{}
 			emailInfo.SendMail("Rule Added", m.cmd, &structPass)
 
 			// Show success message for 5 seconds
