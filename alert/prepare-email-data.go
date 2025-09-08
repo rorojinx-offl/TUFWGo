@@ -55,29 +55,29 @@ func (e *EmailInfo) prepareEmailInfo(action, cmd string, rule *ufw.Form) {
 func (e *EmailInfo) prepareMessage() string {
 
 	var message string
-	if e.Rule == nil {
-		message = fmt.Sprintf(`
-Hello,
-An action was performed on your firewall via TUFWGo.
-📌 Action: %s
-📌 Timestamp: %s
-📌 Executed By: %s
-📌 Hostname: %s
-📌 Local IP: %s
+	/*if e.Rule == nil {
+			message = fmt.Sprintf(`
+	Hello,
+	An action was performed on your firewall via TUFWGo.
+	📌 Action: %s
+	📌 Timestamp: %s
+	📌 Executed By: %s
+	📌 Hostname: %s
+	📌 Local IP: %s
 
-🏷️ Command Executed:
-	%s
+	🏷️ Command Executed:
+		%s
 
-TUFWGo Alert Manager
-`,
-			e.Action,
-			e.Timestamp,
-			e.ExecutedBy,
-			e.Hostname,
-			e.LocalIP,
-			e.Command)
-		return message
-	}
+	TUFWGo Alert Manager
+	`,
+				e.Action,
+				e.Timestamp,
+				e.ExecutedBy,
+				e.Hostname,
+				e.LocalIP,
+				e.Command)
+			return message
+		}*/
 
 	var appProfile string
 	var direction string
@@ -161,7 +161,7 @@ TUFWGo Alert Manager
 			protocol,
 			appProfile,
 			e.Command)
-	} else if e.Action == "Rule Deleted" {
+	} else if e.Action == "Rule Deleted" && e.Rule == nil {
 		message = fmt.Sprintf(`
 Hello,
 An action was performed on your firewall via TUFWGo.
