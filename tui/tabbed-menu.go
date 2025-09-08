@@ -55,7 +55,7 @@ type successBoxModel struct {
 type clearToast struct{}
 
 var structPass ufw.Form
-var emailInfo *alert.EmailInfo
+var emailInfo alert.EmailInfo
 
 func (m *TabModel) Init() tea.Cmd {
 	return nil
