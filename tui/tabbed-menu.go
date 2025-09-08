@@ -196,6 +196,11 @@ func (m *TabModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					m.child = newErrorBoxModel("There was an error executing your command!", err.Error(), m.child)
 					return m, nil
 				}
+
+				emailInfo = &alert.EmailInfo{}
+				alert.DeleteRule = m.rule
+				emailInfo.SendMail("Rule Deleted", m.cmd, nil)
+
 				m.child = newSuccessBoxModel("UFW Rule deleted remotely:", m.rule, nil)
 				m.toastUntil = time.Now().Add(5 * time.Second)
 				return m, tea.Tick(time.Until(m.toastUntil), func(time.Time) tea.Msg { return clearToast{} })
