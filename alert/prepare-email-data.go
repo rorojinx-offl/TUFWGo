@@ -74,6 +74,7 @@ TUFWGo Alert Manager
 			e.Hostname,
 			e.LocalIP,
 			e.Command)
+		return message
 	}
 
 	var appProfile string
