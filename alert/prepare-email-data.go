@@ -184,6 +184,7 @@ TUFWGo Alert Manager
 			e.LocalIP,
 			DeleteRule,
 			e.Command)
+		return message
 	}
 
 	if ssh.GetSSHStatus() {
