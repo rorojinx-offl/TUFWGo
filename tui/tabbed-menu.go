@@ -287,6 +287,8 @@ func (m *TabModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "Create Profile":
 			m.child = NewProfileModel()
 			m.selected = ""
+		case "Add to Profile":
+			m.child = NewProfilesFlow()
 		default:
 			m.selected = msg.Item
 		}
