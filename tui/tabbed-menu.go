@@ -317,6 +317,9 @@ func (m *TabModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "Import a Profile":
 			m.child = LoadFromProfile()
 			m.selected = ""
+		case "Examine Profiles":
+			m.child = NewExamineFlow()
+			m.selected = ""
 		default:
 			m.selected = msg.Item
 		}
