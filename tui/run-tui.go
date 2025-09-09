@@ -22,7 +22,7 @@ func RunTUI() {
 	tabContent := []*Model{
 		{Items: withSSH},
 		{Items: []string{"Adjust your preferences here.", "Change settings as needed.", "Customize your experience.", "Save your changes."}},
-		{Items: []string{"Create Profile", "Add to Profile", "Import a Profile", "Examine Profiles"}},
+		{Items: []string{"Create Profile", "Add to Profile", "Import a Profile", "Examine Profiles", "Deploy Profiles"}},
 		{Items: []string{"Find answers to common questions.", "Contact support if needed.", "Explore tutorials and guides.", "Get the most out of the app."}},
 	}
 
