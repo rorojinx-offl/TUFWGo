@@ -230,6 +230,9 @@ func (m *TabModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case ProfileDone:
 			m.child = nil
 			return m, nil
+		case ReturnFromProfile:
+			m.child = nil
+			return m, nil
 		}
 		if time.Now().Before(m.toastUntil) {
 			// Still showing toast, don't process other messages

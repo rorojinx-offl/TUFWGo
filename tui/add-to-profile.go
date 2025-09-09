@@ -142,6 +142,7 @@ type RuleAdded struct{ RuleMem []string } // feedback toast: how many in memory
 type RuleSubmit struct{}
 type RulesetConfirm struct{ RuleMem []string }
 type RulesetCancel struct{ RuleMem []string }
+type ReturnFromProfile struct{}
 
 /* ---------- Screen 2: Simplified rule form (no App Profile) ---------- */
 
@@ -487,7 +488,7 @@ func (m *profilesFlow) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return m, nil
 			}
 
-			m.child = newSuccessBoxModel(fmt.Sprintf("Successfully wrote ruleset to profile: %s", strings.Trim(profile, ".json")), fmt.Sprintf("Profile is located at: %s", profilePath), nil)
+			m.child = newSuccessBoxModel(fmt.Sprintf("Successfully wrote ruleset to profile: %s", strings.Trim(profile, ".json")), fmt.Sprintf("Profile is located at: %s", profilePath), returnMsg(ProfileDone{}))
 			return m, nil
 		}
 		next, cmd := m.child.Update(msg)
@@ -503,3 +504,10 @@ func (m *profilesFlow) View() string {
 	}
 	return "Press Esc to exit."
 }
+
+type returnMsgModel struct{ msg tea.Msg }
+
+func (m *returnMsgModel) Init() tea.Cmd                         { return func() tea.Msg { return m.msg } }
+func (m *returnMsgModel) Update(_ tea.Msg) (tea.Model, tea.Cmd) { return m, nil }
+func (m *returnMsgModel) View() string                          { return "" }
+func returnMsg(msg tea.Msg) tea.Model                           { return &returnMsgModel{msg: msg} }
