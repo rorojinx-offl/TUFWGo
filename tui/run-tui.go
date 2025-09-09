@@ -2,6 +2,8 @@ package tui
 
 import (
 	"TUFWGo/system/ssh"
+	"fmt"
+	"os"
 
 	tea "github.com/charmbracelet/bubbletea"
 )
@@ -32,5 +34,12 @@ func RunTUI() {
 	p := tea.NewProgram(m, tea.WithAltScreen())
 	if _, err := p.Run(); err != nil {
 		panic(err)
+	}
+}
+
+func RunCreateProfile() {
+	if _, err := tea.NewProgram(NewProfileModel(), tea.WithAltScreen()).Run(); err != nil {
+		fmt.Println("error:", err)
+		os.Exit(1)
 	}
 }
