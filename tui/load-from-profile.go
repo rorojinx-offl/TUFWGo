@@ -69,7 +69,8 @@ func (m *profileLoadModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return m, nil
 			}
 			if !sealed {
-				return m, func() tea.Msg { return EmptyProfile{} }
+				m.err = "The selected profile is empty or contains an invalid data format! The profile you selected does not contain any rules to add."
+				return m, nil
 			}
 
 			return m, func() tea.Msg { return LoadProfile{Path: path} }
