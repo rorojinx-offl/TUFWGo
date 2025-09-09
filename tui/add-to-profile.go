@@ -323,6 +323,10 @@ func (m *simpleRuleForm) View() string {
 }
 
 func (m *simpleRuleForm) updateFocus() {
+	m.action.Focused = m.focusIdx == sfAction
+	m.direction.Focused = m.focusIdx == sfDirection
+	m.iface.Focused = m.focusIdx == sfInterface
+
 	m.fromIP.Blur()
 	m.toIP.Blur()
 	m.port.Blur()
