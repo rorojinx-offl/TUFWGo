@@ -105,7 +105,7 @@ func examineProfileHasData(path string) (bool, error) {
 		return false, nil
 	}
 	var p examineProbe
-	if err := json.Unmarshal(b, &p); err != nil {
+	if err = json.Unmarshal(b, &p); err != nil {
 		// invalid JSON -> treat as empty for examine
 		return false, nil
 	}

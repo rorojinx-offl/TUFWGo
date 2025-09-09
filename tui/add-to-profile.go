@@ -399,6 +399,7 @@ type profilesFlow struct {
 
 type sealProbe struct {
 	Commands []string `json:"commands"`
+	Rules    []string `json:"rules"`
 }
 
 func profileIsSealed(path string) (bool, error) {
@@ -412,7 +413,7 @@ func profileIsSealed(path string) (bool, error) {
 
 	var sp *sealProbe
 	if err = json.Unmarshal(b, &sp); err == nil {
-		if len(sp.Commands) > 0 {
+		if len(sp.Commands) > 0 || len(sp.Rules) > 0 {
 			return true, nil
 		}
 		return false, nil
