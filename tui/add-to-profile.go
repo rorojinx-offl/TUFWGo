@@ -31,7 +31,7 @@ type profileSelectModel struct {
 func NewProfileSelect(baseDir string, onChoose func(path string) tea.Msg) *profileSelectModel {
 	files := listJSONProfiles(baseDir)
 	dd := newDropdown("Choose a ruleset", files)
-	dd.Width = 40
+	dd.Width = 64
 	return &profileSelectModel{
 		title:    "Select Ruleset",
 		dd:       dd,
