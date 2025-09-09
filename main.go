@@ -14,11 +14,11 @@ var sshMode = flag.Bool("ssh", false, "Run in SSH mode")
 
 func main() {
 	local.RequireRoot()
-	//runTUIMode()
+	runTUIMode()
 	//samples.Input()
 	//tui.RunForm()
 	//alert.SendSampleMail()
-	tui.RunCreateProfile()
+	//tui.RunCreateProfile()
 }
 
 func runTUIMode() {
