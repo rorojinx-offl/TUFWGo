@@ -24,7 +24,11 @@ type EmptyProfile struct{}
 type ExecuteProfile struct{ RawCommands []string }
 
 func LoadFromProfile() *profileLoadModel {
-	files := listJSONProfiles(filepath.Join(baseDir, "tufwgo/profiles"))
+	configDir, err := getConfigDir()
+	if err != nil {
+		configDir = os.TempDir()
+	}
+	files := listJSONProfiles(filepath.Join(configDir, "tufwgo/profiles"))
 	dd := newDropdown("Choose a ruleset", files)
 	return &profileLoadModel{
 		title: "Select Ruleset",
@@ -111,4 +115,12 @@ func executeProfile(commands []string) error {
 		}
 	}
 	return nil
+}
+
+func getConfigDir() (string, error) {
+	cfg, err := os.UserConfigDir()
+	if err != nil {
+		return "", err
+	}
+	return cfg, nil
 }
