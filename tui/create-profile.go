@@ -32,6 +32,7 @@ type RuleSet struct {
 func NewProfileModel() *ProfileModel {
 	ti := textinput.New()
 	ti.Placeholder = "Profile Name"
+	ti.Width = 40
 	ti.Focus()
 	ti.CharLimit = 64
 	ti.Prompt = "Set name: "
