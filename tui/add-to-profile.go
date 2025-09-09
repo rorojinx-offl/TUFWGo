@@ -377,8 +377,9 @@ func (m *simpleRuleForm) collectRule() (string, error) {
 // Example “entry point” model that first shows the profile chooser.
 // Replace baseDir with your actual profiles path later.
 type profilesFlow struct {
-	child    tea.Model
-	commands []string
+	child           tea.Model
+	commands        []string
+	selectedProfile string
 }
 
 var baseDir string
@@ -402,6 +403,7 @@ func (m *profilesFlow) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	if m.child != nil {
 		switch v := msg.(type) {
 		case ProfileChosen:
+			m.selectedProfile = v.Path
 			m.child = NewSimpleRuleForm(v.Path)
 			return m, nil
 		case RulesetCancel:
@@ -420,8 +422,9 @@ func (m *profilesFlow) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, nil
 		case RuleSubmit:
 			var rs *RuleSet
+			rs = &RuleSet{}
 			rs.Commands = m.commands
-			profile := m.child.(*simpleRuleForm).profile
+			profile := m.selectedProfile
 			profilePath := baseDir + "/tufwgo/profiles/" + profile
 
 			data, err := json.MarshalIndent(rs, "", "  ")
