@@ -2,6 +2,7 @@ package tui
 
 import (
 	"TUFWGo/ufw"
+	"encoding/json"
 	"fmt"
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
@@ -122,7 +123,9 @@ func listJSONProfiles(base string) []string {
 
 type ProfileChosen struct{ Path string }
 type RuleAdded struct{ RuleMem []string } // feedback toast: how many in memory
-type RuleSubmit struct{}                  // you’ll wire backend later
+type RuleSubmit struct{}
+type RulesetConfirm struct{ RuleMem []string }
+type RulesetCancel struct{ RuleMem []string }
 
 /* ---------- Screen 2: Simplified rule form (no App Profile) ---------- */
 
@@ -144,8 +147,8 @@ type simpleRuleForm struct {
 	height   int
 
 	// state
-	pending []string // in-memory array you asked for
-	profile string   // selected profile path (display only)
+	pending []string
+	profile string // selected profile path (display only)
 }
 
 const (
@@ -209,7 +212,7 @@ func (m *simpleRuleForm) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		switch v.String() {
 		case "esc", "q":
 			// go back to parent (tabbed menu or previous child)
-			return m, func() tea.Msg { return FormCancelled{} }
+			return m, func() tea.Msg { return RulesetCancel{RuleMem: m.pending} }
 		case "tab", "shift+tab":
 			dir := 1
 			if v.String() == "shift+tab" {
@@ -231,7 +234,7 @@ func (m *simpleRuleForm) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 			if m.focusIdx == sfSubmitBtn {
 				// You’ll wire the backend later; we just emit a message.
-				return m, func() tea.Msg { return RuleSubmit{} }
+				return m, func() tea.Msg { return RulesetConfirm{RuleMem: m.pending} }
 			}
 		}
 	}
@@ -374,11 +377,15 @@ func (m *simpleRuleForm) collectRule() (string, error) {
 // Example “entry point” model that first shows the profile chooser.
 // Replace baseDir with your actual profiles path later.
 type profilesFlow struct {
-	child tea.Model
+	child    tea.Model
+	commands []string
 }
 
+var baseDir string
+
 func NewProfilesFlow() *profilesFlow {
-	baseDir, err := os.UserConfigDir()
+	var err error
+	baseDir, err = os.UserConfigDir()
 	if err != nil {
 		fmt.Println("No access to user config dir:", err)
 		return nil
@@ -397,15 +404,39 @@ func (m *profilesFlow) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case ProfileChosen:
 			m.child = NewSimpleRuleForm(v.Path)
 			return m, nil
-		case FormCancelled:
-			// exit flow
+		case RulesetCancel:
+			//Clear rules in memory and go back to profile select
+			v.RuleMem = nil
 			return m, tea.Quit
 		case RuleAdded:
 			// Optional: toast/feedback
 			return m, nil
+		case RulesetConfirm:
+			m.commands = v.RuleMem
+			cmdList := strings.Join(m.commands, "\n")
+
+			onYes := func() tea.Msg { return RuleSubmit{} }
+			m.child = newConfirmModel("Are you sure you want to add these commands/rules to the selected profile?", cmdList, m.child, onYes)
+			return m, nil
 		case RuleSubmit:
-			// You’ll wire backend later. For now, just quit back to parent.
-			return m, tea.Quit
+			var rs *RuleSet
+			rs.Commands = m.commands
+			profile := m.child.(*simpleRuleForm).profile
+			profilePath := baseDir + "/tufwgo/profiles/" + profile
+
+			data, err := json.MarshalIndent(rs, "", "  ")
+			if err != nil {
+				m.child = newErrorBoxModel("Failed to serialize ruleset:", err.Error(), m)
+				return m, nil
+			}
+			err = os.WriteFile(profilePath, data, 0o644)
+			if err != nil {
+				m.child = newErrorBoxModel("Failed to write ruleset to file:", err.Error(), m)
+				return m, nil
+			}
+
+			m.child = newSuccessBoxModel(fmt.Sprintf("Successfully wrote ruleset to profile: %s", strings.Trim(profile, ".json")), fmt.Sprintf("Profile is located at: %s", profilePath), nil)
+			return m, nil
 		}
 		next, cmd := m.child.Update(msg)
 		m.child = next
