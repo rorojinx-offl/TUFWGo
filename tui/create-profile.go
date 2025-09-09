@@ -1,7 +1,6 @@
 package tui
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
 	"github.com/charmbracelet/bubbles/textinput"
@@ -11,7 +10,6 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
-	"time"
 )
 
 type ProfileModel struct {
@@ -24,9 +22,9 @@ type ProfileModel struct {
 }
 
 type RuleSet struct {
-	Name      string    `json:"name"`
-	CreatedAt time.Time `json:"created_at"`
-	Commands  []string  `json:"commands"`
+	Name      string   `json:"name"`
+	CreatedAt string   `json:"created_at"`
+	Commands  []string `json:"commands"`
 }
 
 type ProfileDone struct{}
@@ -137,9 +135,9 @@ func saveEmptyRuleSet(name string) (string, error) {
 		finalPath = filepath.Join(base, fmt.Sprintf("%s-%d.json", slug, i))
 	}
 
-	rs := RuleSet{
+	/*rs := RuleSet{
 		Name:      name,
-		CreatedAt: time.Now().UTC(),
+		CreatedAt: time.Now().Format("2006-01-02 15:04:05"),
 		Commands:  []string{},
 	}
 	data, err := json.MarshalIndent(rs, "", "  ")
@@ -148,7 +146,7 @@ func saveEmptyRuleSet(name string) (string, error) {
 	}
 	if err := os.WriteFile(finalPath, data, 0o644); err != nil {
 		return "", err
-	}
+	}*/
 	return finalPath, nil
 }
 
