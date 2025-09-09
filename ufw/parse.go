@@ -59,6 +59,10 @@ func (f *Form) ParseForm() (string, error) {
 
 	}
 
+	if f.Interface != "" && f.Direction == "" {
+		return "", errors.New("direction must be specified if interface is set: 'in' or 'out'")
+	}
+
 	if f.FromIP != "" {
 		if !validIpv4(f.FromIP) {
 			return "", errors.New("invalid source IP address")
@@ -71,7 +75,7 @@ func (f *Form) ParseForm() (string, error) {
 	}
 
 	if f.ToIP != "" {
-		if !validIpv4(f.FromIP) {
+		if !validIpv4(f.ToIP) {
 			return "", errors.New("invalid source IP address")
 		}
 		_, err := fmt.Fprintf(&b, " to %s", f.ToIP)
