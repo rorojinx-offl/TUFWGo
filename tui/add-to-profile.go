@@ -121,10 +121,19 @@ func listJSONProfiles(base string) []string {
 /* ---------- Messages to move between screens ---------- */
 
 type ProfileChosen struct{ Path string }
-type RuleAdded struct{ RuleMem []string }
+type RuleAdded struct {
+	CmdMem  []string
+	RuleMem []ruleFormat
+}
 type RuleSubmit struct{}
-type RulesetConfirm struct{ RuleMem []string }
-type RulesetCancel struct{ RuleMem []string }
+type RulesetConfirm struct {
+	CmdMem  []string
+	RuleMem []ruleFormat
+}
+type RulesetCancel struct {
+	CmdMem  []string
+	RuleMem []ruleFormat
+}
 type ReturnFromProfile struct{}
 
 type simpleRuleForm struct {
@@ -145,8 +154,19 @@ type simpleRuleForm struct {
 	height   int
 
 	// state
-	pending []string
-	profile string // selected profile path (display only)
+	pendingCommands []string
+	pendingRules    []ruleFormat
+	profile         string // selected profile path (display only)
+}
+
+type ruleFormat struct {
+	Action    string
+	Direction string
+	Interface string
+	FromIP    string
+	ToIP      string
+	Port      string
+	Protocol  string
 }
 
 const (
@@ -210,7 +230,7 @@ func (m *simpleRuleForm) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		switch v.String() {
 		case "esc", "q":
 			// go back to parent (tabbed menu or previous child)
-			return m, func() tea.Msg { return RulesetCancel{RuleMem: m.pending} }
+			return m, func() tea.Msg { return RulesetCancel{CmdMem: m.pendingCommands} }
 		case "tab", "shift+tab":
 			dir := 1
 			if v.String() == "shift+tab" {
@@ -223,16 +243,17 @@ func (m *simpleRuleForm) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			// When focus is on buttons:
 			if m.focusIdx == sfAddBtn {
 				// Build a Rule from current fields and push to in-memory slice.
-				r, err := m.collectRule()
+				c, r, err := m.collectRule()
 				if err != nil {
 					return newErrorBoxModel("Invalid Rule:", err.Error(), m), nil
 				}
-				m.pending = append(m.pending, r)
-				return m, func() tea.Msg { return RuleAdded{RuleMem: m.pending} }
+				m.pendingCommands = append(m.pendingCommands, c)
+				m.pendingRules = append(m.pendingRules, *r)
+				return m, func() tea.Msg { return RuleAdded{CmdMem: m.pendingCommands, RuleMem: m.pendingRules} }
 			}
 			if m.focusIdx == sfSubmitBtn {
 				// You’ll wire the backend later; we just emit a message.
-				return m, func() tea.Msg { return RulesetConfirm{RuleMem: m.pending} }
+				return m, func() tea.Msg { return RulesetConfirm{CmdMem: m.pendingCommands, RuleMem: m.pendingRules} }
 			}
 		}
 	}
@@ -306,7 +327,7 @@ func (m *simpleRuleForm) View() string {
 		"",
 		buttons,
 		"",
-		hintStyle.Render(fmt.Sprintf("Pending in memory: %d", len(m.pending))),
+		hintStyle.Render(fmt.Sprintf("Pending in memory: %d", len(m.pendingCommands))),
 	}, "\n")
 }
 
@@ -332,7 +353,7 @@ func (m *simpleRuleForm) updateFocus() {
 	}
 }
 
-func (m *simpleRuleForm) collectRule() (string, error) {
+func (m *simpleRuleForm) collectRule() (string, *ruleFormat, error) {
 	dir := m.direction.Value()
 	if dir == "default" {
 		dir = ""
@@ -341,7 +362,18 @@ func (m *simpleRuleForm) collectRule() (string, error) {
 	if iface == "default" {
 		iface = ""
 	}
-	rf := &ufw.Form{
+
+	rf := &ruleFormat{
+		Action:    m.action.Value(),
+		Direction: m.direction.Value(),
+		Interface: m.iface.Value(),
+		FromIP:    m.fromIP.Value(),
+		ToIP:      m.toIP.Value(),
+		Port:      m.port.Value(),
+		Protocol:  m.protocol.Value(),
+	}
+
+	cmdFields := &ufw.Form{
 		Action:    m.action.Value(),
 		Direction: dir,
 		Interface: iface,
@@ -350,17 +382,18 @@ func (m *simpleRuleForm) collectRule() (string, error) {
 		Port:      m.port.Value(),
 		Protocol:  m.protocol.Value(),
 	}
-	cmd, err := rf.ParseForm()
+	cmd, err := cmdFields.ParseForm()
 	if err != nil {
-		return "", err
+		return "", &ruleFormat{}, err
 	}
-	return cmd, nil
+	return cmd, rf, nil
 }
 
 /* ---------- Parent flow to manage the two screens ---------- */
 type profilesFlow struct {
 	child           tea.Model
 	commands        []string
+	rules           []ruleFormat
 	selectedProfile string
 }
 
@@ -421,12 +454,14 @@ func (m *profilesFlow) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, nil
 		case RulesetCancel:
 			//Clear rules in memory and go back to profile select
+			v.CmdMem = nil
 			v.RuleMem = nil
 			return m, tea.Quit
 		case RuleAdded:
 			return m, nil
 		case RulesetConfirm:
-			m.commands = v.RuleMem
+			m.commands = v.CmdMem
+			m.rules = v.RuleMem
 			cmdList := strings.Join(m.commands, "\n")
 
 			onYes := func() tea.Msg { return RuleSubmit{} }
@@ -436,6 +471,7 @@ func (m *profilesFlow) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			var rs *RuleSet
 			rs = &RuleSet{}
 			rs.Commands = m.commands
+			rs.Rules = m.rules
 			profile := m.selectedProfile
 			rs.Name = strings.Trim(profile, ".json")
 			rs.CreatedAt = time.Now().Format("2006-01-02 15:04:05")

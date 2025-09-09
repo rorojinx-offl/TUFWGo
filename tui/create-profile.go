@@ -22,9 +22,10 @@ type ProfileModel struct {
 }
 
 type RuleSet struct {
-	Name      string   `json:"name"`
-	CreatedAt string   `json:"created_at"`
-	Commands  []string `json:"commands"`
+	Name      string       `json:"name"`
+	CreatedAt string       `json:"created_at"`
+	Commands  []string     `json:"commands"`
+	Rules     []ruleFormat `json:"rules"`
 }
 
 type ProfileDone struct{}
@@ -134,16 +135,6 @@ func saveEmptyRuleSet(name string) (string, error) {
 	for i := 2; fileExists(finalPath); i++ {
 		finalPath = filepath.Join(base, fmt.Sprintf("%s-%d.json", slug, i))
 	}
-
-	/*rs := RuleSet{
-		Name:      name,
-		CreatedAt: time.Now().Format("2006-01-02 15:04:05"),
-		Commands:  []string{},
-	}
-	data, err := json.MarshalIndent(rs, "", "  ")
-	if err != nil {
-		return "", err
-	}*/
 
 	if err = os.WriteFile(finalPath, nil, 0o644); err != nil {
 		return "", err
