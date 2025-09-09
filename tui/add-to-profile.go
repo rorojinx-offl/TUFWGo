@@ -29,6 +29,8 @@ type profileSelectModel struct {
 	err      string
 }
 
+type InvalidProfile struct{}
+
 // NewProfileSelect takes a directory and lists *.json files.
 // Leave baseDir empty ("") and you can inject your own later.
 func NewProfileSelect(baseDir string, onChoose func(path string) tea.Msg) *profileSelectModel {
@@ -72,9 +74,7 @@ func (m *profileSelectModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return m, nil
 			}
 			if sealed {
-				return m, func() tea.Msg {
-					return newErrorBoxModel("Profile is sealed:", "The profile already contains data and is write-once. Please select an empty profile", m)
-				}
+				return m, func() tea.Msg { return InvalidProfile{} }
 			}
 
 			if m.onChoose != nil {
@@ -449,6 +449,9 @@ func (m *profilesFlow) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case ProfileChosen:
 			m.selectedProfile = v.Path
 			m.child = NewSimpleRuleForm(v.Path)
+			return m, nil
+		case InvalidProfile:
+			m.child = newErrorBoxModel("Profile is sealed:", "The profile already contains data and is write-once. Please select an empty profile", m)
 			return m, nil
 		case RulesetCancel:
 			//Clear rules in memory and go back to profile select
