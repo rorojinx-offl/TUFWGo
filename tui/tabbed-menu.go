@@ -233,6 +233,27 @@ func (m *TabModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case ReturnFromProfile:
 			m.child = nil
 			return m, nil
+		case LoadProfile:
+			path := child.Path
+			name, created, cmds, rcmds, err := showRulesFromProfile(path)
+			if err != nil {
+				m.child = newErrorBoxModel("There was an error loading the profile!", err.Error(), m.child)
+				return m, nil
+			}
+			display := fmt.Sprintf("Profile Name: %s\nCreated At: %s\n\nCommands:\n%s", name, created, cmds)
+			onYes := func() tea.Msg { return ExecuteProfile{RawCommands: rcmds} }
+			m.child = newConfirmModel(fmt.Sprintf("Are you sure you want to load the profile: %s? Doing so will execute the listed commands and add them as rules on UFW!!", name), display, m.child, onYes)
+			return m, nil
+		case ExecuteProfile:
+			cmds := child.RawCommands
+			err := executeProfile(cmds)
+			if err != nil {
+				m.child = newErrorBoxModel("There was an error executing your profile", err.Error(), m.child)
+				return m, nil
+			}
+			m.child = newSuccessBoxModel("Profile executed successfully!", "The profile has been executed and the rules have been added to UFW.", nil)
+			m.toastUntil = time.Now().Add(5 * time.Second)
+			return m, tea.Tick(time.Until(m.toastUntil), func(time.Time) tea.Msg { return clearToast{} })
 		}
 		if time.Now().Before(m.toastUntil) {
 			// Still showing toast, don't process other messages
@@ -292,6 +313,10 @@ func (m *TabModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.selected = ""
 		case "Add to Profile":
 			m.child = NewProfilesFlow()
+			m.selected = ""
+		case "Import a Profile":
+			m.child = LoadFromProfile()
+			m.selected = ""
 		default:
 			m.selected = msg.Item
 		}
