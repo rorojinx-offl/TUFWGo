@@ -30,7 +30,7 @@ type profileSelectModel struct {
 func NewProfileSelect(baseDir string, onChoose func(path string) tea.Msg) *profileSelectModel {
 	files := listJSONProfiles(baseDir)
 	dd := newDropdown("Choose a ruleset", files)
-	dd.Width = 64
+	//dd.Width = 64
 	return &profileSelectModel{
 		title:    "Select Ruleset",
 		dd:       dd,
@@ -70,13 +70,23 @@ func (m *profileSelectModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m *profileSelectModel) View() string {
-	title := focusStyle.Render(m.title)
+	/*title := focusStyle.Render(m.title)
 	body := m.dd.View()
 	if m.err != "" {
 		body += "\n" + lipgloss.NewStyle().Foreground(errorColor).Render(m.err)
 	}
 	box := boxStyle.Copy().Width(56).Render(title + "\n\n" + body + "\n\n" + hintStyle.Render("Enter to confirm • ↑/↓ to move • Esc to exit"))
-	return lipgloss.Place(m.width, m.height, lipgloss.Center, lipgloss.Center, box)
+	return lipgloss.Place(m.width, m.height, lipgloss.Center, lipgloss.Center, box)*/
+
+	var b strings.Builder
+	b.WriteString(focusStyle.Render(m.title) + "\n")
+	b.WriteString(hintStyle.Render("Enter to open/confirm • ↑/↓ to move • Esc to close") + "\n")
+	b.WriteString(sepStyle.Render(strings.Repeat("─", 80)) + "\n\n")
+	b.WriteString(m.dd.View())
+	if m.err != "" {
+		b.WriteString("\n" + lipgloss.NewStyle().Foreground(errorColor).Render(m.err))
+	}
+	return b.String()
 }
 
 func listJSONProfiles(base string) []string {
@@ -283,7 +293,7 @@ func (m *simpleRuleForm) View() string {
 	}
 	buttons := lipgloss.JoinHorizontal(lipgloss.Top, addBtn+"   ", submitBtn)
 
-	content := strings.Join([]string{
+	/*content := strings.Join([]string{
 		header,
 		sepStyle.Render(strings.Repeat("─", 80)),
 		row,
@@ -294,7 +304,17 @@ func (m *simpleRuleForm) View() string {
 	}, "\n")
 
 	outer := boxStyle.Copy().Width(90).Render(content)
-	return lipgloss.Place(m.width, m.height, lipgloss.Center, lipgloss.Center, outer)
+	return lipgloss.Place(m.width, m.height, lipgloss.Center, lipgloss.Center, outer)*/
+
+	return strings.Join([]string{
+		header,
+		sepStyle.Render(strings.Repeat("─", 80)),
+		row,
+		"",
+		buttons,
+		"",
+		hintStyle.Render(fmt.Sprintf("Pending in memory: %d", len(m.pending))),
+	}, "\n")
 }
 
 func (m *simpleRuleForm) updateFocus() {
