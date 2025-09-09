@@ -357,7 +357,7 @@ func NewProfilesFlow() *profilesFlow {
 	}
 	onChoose := func(path string) tea.Msg { return ProfileChosen{Path: path} }
 	return &profilesFlow{
-		child: NewProfileSelect(baseDir, onChoose),
+		child: NewProfileSelect(baseDir+"/tufwgo/profiles", onChoose),
 	}
 }
 
