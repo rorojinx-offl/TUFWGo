@@ -15,10 +15,6 @@ import (
 	"time"
 )
 
-/* ---------- Screen 1: Profile chooser with a dropdown ---------- */
-
-// Reuse the dropdown UX pattern you already have in ipv4-form.go.
-// Here is a tiny, local “list-of-files” wrapper around a dropdown.
 type profileSelectModel struct {
 	title    string
 	dd       dropdown // use your dropdown component struct
@@ -32,11 +28,9 @@ type profileSelectModel struct {
 type InvalidProfile struct{}
 
 // NewProfileSelect takes a directory and lists *.json files.
-// Leave baseDir empty ("") and you can inject your own later.
 func NewProfileSelect(baseDir string, onChoose func(path string) tea.Msg) *profileSelectModel {
 	files := listJSONProfiles(baseDir)
 	dd := newDropdown("Choose a ruleset", files)
-	//dd.Width = 64
 	return &profileSelectModel{
 		title:    "Select Ruleset",
 		dd:       dd,
@@ -92,14 +86,6 @@ func (m *profileSelectModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m *profileSelectModel) View() string {
-	/*title := focusStyle.Render(m.title)
-	body := m.dd.View()
-	if m.err != "" {
-		body += "\n" + lipgloss.NewStyle().Foreground(errorColor).Render(m.err)
-	}
-	box := boxStyle.Copy().Width(56).Render(title + "\n\n" + body + "\n\n" + hintStyle.Render("Enter to confirm • ↑/↓ to move • Esc to exit"))
-	return lipgloss.Place(m.width, m.height, lipgloss.Center, lipgloss.Center, box)*/
-
 	var b strings.Builder
 	b.WriteString(focusStyle.Render(m.title) + "\n")
 	b.WriteString(hintStyle.Render("Enter to open/confirm • ↑/↓ to choose • Esc to close") + "\n")
@@ -112,10 +98,7 @@ func (m *profileSelectModel) View() string {
 }
 
 func listJSONProfiles(base string) []string {
-	// Leave base blank if you want to inject later.
-	// This function returns just file basenames (or paths if you prefer).
 	if base == "" {
-		// placeholder: you can swap this to your own profiles dir resolver
 		base = "./profiles"
 	}
 	entries, err := os.ReadDir(base)
@@ -138,13 +121,11 @@ func listJSONProfiles(base string) []string {
 /* ---------- Messages to move between screens ---------- */
 
 type ProfileChosen struct{ Path string }
-type RuleAdded struct{ RuleMem []string } // feedback toast: how many in memory
+type RuleAdded struct{ RuleMem []string }
 type RuleSubmit struct{}
 type RulesetConfirm struct{ RuleMem []string }
 type RulesetCancel struct{ RuleMem []string }
 type ReturnFromProfile struct{}
-
-/* ---------- Screen 2: Simplified rule form (no App Profile) ---------- */
 
 type simpleRuleForm struct {
 	// dropdowns
@@ -185,7 +166,7 @@ func NewSimpleRuleForm(profilePath string) *simpleRuleForm {
 	actions := []string{"allow", "deny", "reject", "limit"}
 	directions := []string{"default", "in", "out"}
 	ifaces := []string{"default"}
-	ifaces = append(ifaces, listInterfaces()...) // you already have this in ipv4-form.go
+	ifaces = append(ifaces, listInterfaces()...)
 
 	m := &simpleRuleForm{
 		action:    newDropdown("Action", actions),
@@ -318,19 +299,6 @@ func (m *simpleRuleForm) View() string {
 	}
 	buttons := lipgloss.JoinHorizontal(lipgloss.Top, addBtn+"   ", submitBtn)
 
-	/*content := strings.Join([]string{
-		header,
-		sepStyle.Render(strings.Repeat("─", 80)),
-		row,
-		"",
-		buttons,
-		"",
-		hintStyle.Render(fmt.Sprintf("Pending in memory: %d", len(m.pending))),
-	}, "\n")
-
-	outer := boxStyle.Copy().Width(90).Render(content)
-	return lipgloss.Place(m.width, m.height, lipgloss.Center, lipgloss.Center, outer)*/
-
 	return strings.Join([]string{
 		header,
 		sepStyle.Render(strings.Repeat("─", 80)),
@@ -389,10 +357,7 @@ func (m *simpleRuleForm) collectRule() (string, error) {
 	return cmd, nil
 }
 
-/* ---------- Glue: how to chain the two screens ---------- */
-
-// Example “entry point” model that first shows the profile chooser.
-// Replace baseDir with your actual profiles path later.
+/* ---------- Parent flow to manage the two screens ---------- */
 type profilesFlow struct {
 	child           tea.Model
 	commands        []string
@@ -459,7 +424,6 @@ func (m *profilesFlow) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			v.RuleMem = nil
 			return m, tea.Quit
 		case RuleAdded:
-			// Optional: toast/feedback
 			return m, nil
 		case RulesetConfirm:
 			m.commands = v.RuleMem
