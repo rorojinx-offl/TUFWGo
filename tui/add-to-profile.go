@@ -50,18 +50,23 @@ func (m *profileSelectModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "esc", "q":
 			return m, tea.Quit
 		case "enter":
-			// If the dropdown is open, Enter toggles it. If closed, confirm.
-			if m.dd.Open {
-				m.dd.Open = false
-			} else {
-				chosen := strings.TrimSpace(m.dd.Value())
-				if chosen == "" {
-					m.err = "No ruleset selected."
-					return m, nil
-				}
-				if m.onChoose != nil {
-					return m, func() tea.Msg { return m.onChoose(chosen) }
-				}
+			if !m.dd.Open {
+				m.dd.Open = true
+				return m, nil
+			}
+
+			chosen := strings.TrimSpace(m.dd.Value())
+			if chosen == "" {
+				m.err = "No ruleset selected."
+				return m, nil
+			}
+			if m.onChoose != nil {
+				return m, func() tea.Msg { return m.onChoose(chosen) }
+			}
+			return m, nil
+		case "up", "down":
+			if !m.dd.Open {
+				m.dd.Open = true
 			}
 		}
 	}
@@ -80,7 +85,7 @@ func (m *profileSelectModel) View() string {
 
 	var b strings.Builder
 	b.WriteString(focusStyle.Render(m.title) + "\n")
-	b.WriteString(hintStyle.Render("Enter to open/confirm • ↑/↓ to move • Esc to close") + "\n")
+	b.WriteString(hintStyle.Render("Enter to open/confirm • ↑/↓ to choose • Esc to close") + "\n")
 	b.WriteString(sepStyle.Render(strings.Repeat("─", 80)) + "\n\n")
 	b.WriteString(m.dd.View())
 	if m.err != "" {
