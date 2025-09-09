@@ -394,7 +394,6 @@ func (m *simpleRuleForm) collectRule() (string, error) {
 // Replace baseDir with your actual profiles path later.
 type profilesFlow struct {
 	child           tea.Model
-	parent          *TabModel
 	commands        []string
 	selectedProfile string
 }
@@ -429,7 +428,7 @@ func profileIsSealed(path string) (bool, error) {
 
 var baseDir string
 
-func NewProfilesFlow(parent *TabModel) *profilesFlow {
+func NewProfilesFlow() *profilesFlow {
 	var err error
 	baseDir, err = os.UserConfigDir()
 	if err != nil {
@@ -438,8 +437,7 @@ func NewProfilesFlow(parent *TabModel) *profilesFlow {
 	}
 	onChoose := func(path string) tea.Msg { return ProfileChosen{Path: path} }
 	return &profilesFlow{
-		child:  NewProfileSelect(baseDir+"/tufwgo/profiles", onChoose),
-		parent: parent,
+		child: NewProfileSelect(baseDir+"/tufwgo/profiles", onChoose),
 	}
 }
 
@@ -489,7 +487,7 @@ func (m *profilesFlow) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return m, nil
 			}
 
-			m.child = newSuccessBoxModel(fmt.Sprintf("Successfully wrote ruleset to profile: %s", strings.Trim(profile, ".json")), fmt.Sprintf("Profile is located at: %s", profilePath), m.parent)
+			m.child = newSuccessBoxModel(fmt.Sprintf("Successfully wrote ruleset to profile: %s", strings.Trim(profile, ".json")), fmt.Sprintf("Profile is located at: %s", profilePath), nil)
 			return m, nil
 		}
 		next, cmd := m.child.Update(msg)
@@ -502,11 +500,6 @@ func (m *profilesFlow) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 func (m *profilesFlow) View() string {
 	if m.child != nil {
 		return m.child.View()
-	}
-	if m.parent != nil {
-		m.parent.activeTab = 2 // Profile Management tab
-		m.parent.child = nil
-		return m.parent.View()
 	}
 	return "Press Esc to exit."
 }
