@@ -125,7 +125,7 @@ func saveEmptyRuleSet(name string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	if err := os.MkdirAll(base, 0755); err != nil {
+	if err = os.MkdirAll(base, 0755); err != nil {
 		return "", err
 	}
 
@@ -143,10 +143,11 @@ func saveEmptyRuleSet(name string) (string, error) {
 	data, err := json.MarshalIndent(rs, "", "  ")
 	if err != nil {
 		return "", err
-	}
-	if err := os.WriteFile(finalPath, data, 0o644); err != nil {
-		return "", err
 	}*/
+
+	if err = os.WriteFile(finalPath, nil, 0o644); err != nil {
+		return "", err
+	}
 	return finalPath, nil
 }
 
