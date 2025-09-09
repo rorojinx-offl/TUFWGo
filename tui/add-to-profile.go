@@ -2,14 +2,17 @@ package tui
 
 import (
 	"TUFWGo/ufw"
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"os"
+	"path/filepath"
 	"sort"
 	"strings"
+	"time"
 )
 
 /* ---------- Screen 1: Profile chooser with a dropdown ---------- */
@@ -61,6 +64,19 @@ func (m *profileSelectModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.err = "No ruleset selected."
 				return m, nil
 			}
+
+			path := filepath.Join(baseDir+"/tufwgo/profiles", chosen)
+			sealed, err := profileIsSealed(path)
+			if err != nil {
+				m.err = fmt.Sprintf("Failed to check profile: %v", err)
+				return m, nil
+			}
+			if sealed {
+				return m, func() tea.Msg {
+					return newErrorBoxModel("Profile is sealed:", "The profile already contains data and is write-once. Please select an empty profile", m)
+				}
+			}
+
 			if m.onChoose != nil {
 				return m, func() tea.Msg { return m.onChoose(chosen) }
 			}
@@ -382,6 +398,34 @@ type profilesFlow struct {
 	selectedProfile string
 }
 
+type sealProbe struct {
+	Commands []string `json:"commands"`
+}
+
+func profileIsSealed(path string) (bool, error) {
+	b, err := os.ReadFile(path)
+	if err != nil {
+		return false, err
+	}
+	if len(bytes.TrimSpace(b)) == 0 {
+		return false, nil
+	}
+
+	var sp *sealProbe
+	if err = json.Unmarshal(b, &sp); err == nil {
+		if len(sp.Commands) > 0 {
+			return true, nil
+		}
+		return false, nil
+	}
+
+	var anyData map[string]interface{}
+	if err = json.Unmarshal(b, &anyData); err == nil && len(anyData) > 0 {
+		return true, nil
+	}
+	return false, nil
+}
+
 var baseDir string
 
 func NewProfilesFlow() *profilesFlow {
@@ -425,6 +469,8 @@ func (m *profilesFlow) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			rs = &RuleSet{}
 			rs.Commands = m.commands
 			profile := m.selectedProfile
+			rs.Name = strings.Trim(profile, ".json")
+			rs.CreatedAt = time.Now().Format("2006-01-02 15:04:05")
 			profilePath := baseDir + "/tufwgo/profiles/" + profile
 
 			data, err := json.MarshalIndent(rs, "", "  ")
