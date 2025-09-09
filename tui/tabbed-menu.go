@@ -281,6 +281,9 @@ func (m *TabModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.child = newSuccessBoxModel("SSH Connection Successful!", "You are now connected via SSH!", m.child)
 			}
 			m.selected = ""
+		case "Create Profile":
+			m.child = NewProfileModel()
+			m.selected = ""
 		default:
 			m.selected = msg.Item
 		}
