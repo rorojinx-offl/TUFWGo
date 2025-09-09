@@ -57,8 +57,12 @@ func (m *profileLoadModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.err = "No ruleset selected."
 				return m, nil
 			}
-
-			path := filepath.Join(baseDir+"/tufwgo/profiles", chosen)
+			cfgPath, err := getConfigDir()
+			if err != nil {
+				m.err = fmt.Sprintf("Failed to get config dir: %v", err)
+				return m, nil
+			}
+			path := filepath.Join(cfgPath+"/tufwgo/profiles", chosen)
 			sealed, err := profileIsSealed(path)
 			if err != nil {
 				m.err = fmt.Sprintf("Failed to check profile: %v", err)
