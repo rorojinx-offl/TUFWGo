@@ -20,7 +20,6 @@ type profileLoadModel struct {
 	err    string
 }
 type LoadProfile struct{ Path string }
-type EmptyProfile struct{}
 type ExecuteProfile struct{ RawCommands []string }
 
 func LoadFromProfile() *profileLoadModel {

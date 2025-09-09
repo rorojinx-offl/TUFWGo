@@ -22,7 +22,6 @@ type examineSelectModel struct {
 }
 
 type examineChosen struct{ Path string }
-type examineEmpty struct{} // file exists but not sealed (no data)
 
 func NewExamineSelect(baseDir string, onChoose func(path string) tea.Msg) *examineSelectModel {
 	files := listJSONProfiles(filepath.Join(baseDir, "tufwgo", "profiles")) // same lister you have
@@ -112,8 +111,6 @@ func examineProfileHasData(path string) (bool, error) {
 	return len(p.Commands) > 0 || len(p.Rules) > 0, nil
 }
 
-// ---------- Examine paginator ----------
-
 type examineModel struct {
 	name      string
 	createdAt string
@@ -166,7 +163,6 @@ func (m *examineModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 func (m *examineModel) View() string {
 	var b strings.Builder
 
-	// Header (like your other screens)
 	b.WriteString(focusStyle.Render("Profile: ") + m.name + "  " + hintStyle.Render("Created: "+m.createdAt) + "\n")
 	b.WriteString(sepStyle.Render(strings.Repeat("─", 80)) + "\n\n")
 
@@ -232,8 +228,6 @@ func loadRuleSet(path string) (*RuleSet, error) {
 	}
 	return &rs, nil
 }
-
-// ---------- Flow wrapper (like your add-to-profile flow) ----------
 
 type examineFlow struct {
 	child tea.Model
