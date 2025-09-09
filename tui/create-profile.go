@@ -97,6 +97,10 @@ func (m *ProfileModel) View() string {
 		m.ti.View() + "\n\n" +
 		hintStyleProfile.Render("Press Enter to save • Esc to cancel")
 
+	if m.errMsg != "" {
+		content += "\n\n" + errStyle.Render(m.errMsg)
+	}
+
 	if m.savedMsg != "" {
 		content += "\n\n" + okStyle.Render(m.savedMsg)
 	}
