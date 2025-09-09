@@ -29,6 +29,8 @@ type RuleSet struct {
 	Commands  []string  `json:"commands"`
 }
 
+type ProfileDone struct{}
+
 func NewProfileModel() *ProfileModel {
 	ti := textinput.New()
 	ti.Placeholder = "Profile Name"
@@ -49,9 +51,9 @@ func (m *ProfileModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.height = msg.Height
 	case tea.KeyMsg:
 		switch msg.String() {
-		case "ctrl+c", "esc":
+		case "esc":
 			m.done = true
-			return m, tea.Quit
+			return m, func() tea.Msg { return ProfileDone{} }
 		case "enter":
 			name := strings.TrimSpace(m.ti.Value())
 			if name == "" {
@@ -65,7 +67,7 @@ func (m *ProfileModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			} else {
 				m.savedMsg = fmt.Sprintf("Profile saved to %s", path)
 				m.done = true
-				return m, tea.Quit
+				return m, nil
 			}
 		}
 	}
