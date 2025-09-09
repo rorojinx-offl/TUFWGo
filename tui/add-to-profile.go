@@ -7,7 +7,6 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"os"
-	"path/filepath"
 	"sort"
 	"strings"
 )
@@ -97,7 +96,7 @@ func listJSONProfiles(base string) []string {
 			continue
 		}
 		if strings.HasSuffix(strings.ToLower(e.Name()), ".json") {
-			out = append(out, filepath.Join(base, e.Name()))
+			out = append(out, e.Name())
 		}
 	}
 	sort.Strings(out)
