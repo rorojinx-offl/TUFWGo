@@ -95,8 +95,7 @@ func (m *profileLoadModel) View() string {
 }
 
 func showRulesFromProfile(path string) (string, string, string, []string, error) {
-	fullPath := filepath.Join(baseDir, "tufwgo/profiles", path)
-	data, err := os.ReadFile(fullPath)
+	data, err := os.ReadFile(path)
 	if err != nil {
 		return "", "", "", nil, err
 	}
