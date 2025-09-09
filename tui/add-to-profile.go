@@ -487,7 +487,7 @@ func (m *profilesFlow) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return m, nil
 			}
 
-			m.child = newSuccessBoxModel(fmt.Sprintf("Successfully wrote ruleset to profile: %s", strings.Trim(profile, ".json")), fmt.Sprintf("Profile is located at: %s", profilePath), nil)
+			m.child = newSuccessBoxModel(fmt.Sprintf("Successfully wrote ruleset to profile: %s", strings.Trim(profile, ".json")), fmt.Sprintf("Profile is located at: %s", profilePath), m.child)
 			return m, nil
 		}
 		next, cmd := m.child.Update(msg)
