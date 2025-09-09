@@ -451,7 +451,7 @@ func (m *profilesFlow) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.child = NewSimpleRuleForm(v.Path)
 			return m, nil
 		case InvalidProfile:
-			m.child = newErrorBoxModel("Profile is sealed:", "The profile already contains data and is write-once. Please select an empty profile", m)
+			m.child = newErrorBoxModel("Profile is sealed:", "The profile already contains data and is write-once. Please select an empty profile", nil)
 			return m, nil
 		case RulesetCancel:
 			//Clear rules in memory and go back to profile select
