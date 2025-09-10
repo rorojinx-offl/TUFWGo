@@ -29,25 +29,21 @@ type ruleFormat struct {
 }
 
 func main() {
-	if len(os.Args) > 1 {
-		if os.Args[1] == "profile" {
-			fs := flag.NewFlagSet("profile", flag.ExitOnError)
-			path := fs.String("path", "", "Path to the profile JSON file")
-			flag.Parse()
-			fmt.Println("profile", *path)
-			_, _, _, cmds, err := showRulesFromProfile(*path)
+	path := flag.String("profile", "", "Path to file to read rules")
+	flag.Parse()
+	if *path == "" {
+		fmt.Fprintln(os.Stderr, "missing required flag: --profile [path]")
+		os.Exit(2)
+	}
 
-			if err != nil {
-				fmt.Fprintln(os.Stderr, "Error reading profile:", err)
-				os.Exit(1)
-			}
-			if err = executeProfile(cmds); err != nil {
-				fmt.Fprintln(os.Stderr, "Error executing profile commands:", err)
-				os.Exit(1)
-			}
-			fmt.Println("Profile executed successfully.")
-			return
-		}
+	_, _, _, cmds, err := showRulesFromProfile(*path)
+	if err != nil {
+		fmt.Println("Error reading profile:", err)
+		os.Exit(1)
+	}
+	if err = executeProfile(cmds); err != nil {
+		fmt.Println("Error executing profile commands:", err)
+		os.Exit(1)
 	}
 }
 
