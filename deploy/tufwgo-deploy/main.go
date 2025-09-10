@@ -34,6 +34,7 @@ func main() {
 			fs := flag.NewFlagSet("profile", flag.ExitOnError)
 			path := fs.String("path", "", "Path to the profile JSON file")
 			_ = fs.Parse(os.Args[2:])
+			fmt.Println("profile", *path)
 			_, _, _, cmds, err := showRulesFromProfile(*path)
 
 			if err != nil {
