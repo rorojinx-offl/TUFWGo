@@ -320,6 +320,12 @@ func (m *TabModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "Examine Profiles":
 			m.child = NewExamineFlow()
 			m.selected = ""
+		case "Profile Deployment Center":
+			/*cfg := AnsibleConfig{
+			WorkDir: ""
+			}
+			m.child = NewIACFlow()*/
+			m.selected = ""
 		default:
 			m.selected = msg.Item
 		}
