@@ -337,7 +337,7 @@ func (m *TabModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				DeployPlaybook: filepath.Join(configDir, "tufwgo-infra", "playbooks", "deploy_profile.yml"),
 			}
 
-			flow := NewIACFlow(*cfg)
+			flow := NewIACFlow(cfg)
 			m.child = flow
 			m.selected = ""
 			return m, flow.Init()
