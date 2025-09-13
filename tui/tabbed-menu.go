@@ -7,6 +7,8 @@ import (
 	"TUFWGo/ufw"
 	"errors"
 	"fmt"
+	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
@@ -321,11 +323,24 @@ func (m *TabModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.child = NewExamineFlow()
 			m.selected = ""
 		case "Profile Deployment Center":
-			/*cfg := AnsibleConfig{
-			WorkDir: ""
+			configDir, err := getUserHomeDir()
+			if err != nil {
+				m.child = newErrorBoxModel("Could not determine user config directory!", err.Error(), m.child)
+				m.selected = ""
+				return m, nil
 			}
-			m.child = NewIACFlow()*/
+
+			cfg := &AnsibleConfig{
+				WorkDir:        filepath.Join(configDir, "tufwgo-infra"),
+				Inventory:      filepath.Join(configDir, "tufwgo-infra", "inventory.ini"),
+				SendPlaybook:   filepath.Join(configDir, "tufwgo-infra", "playbooks", "send_profile.yml"),
+				DeployPlaybook: filepath.Join(configDir, "tufwgo-infra", "playbooks", "deploy_profile.yml"),
+			}
+
+			flow := NewIACFlow(*cfg)
+			m.child = flow
 			m.selected = ""
+			return m, flow.Init()
 		default:
 			m.selected = msg.Item
 		}
@@ -368,6 +383,22 @@ func (m *TabModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	}
 
 	return m, nil
+}
+
+func getUserConfigDir() (string, error) {
+	dir, err := os.UserConfigDir()
+	if err != nil {
+		return "", errors.New("Could not determine user config directory: " + err.Error())
+	}
+	return dir, nil
+}
+
+func getUserHomeDir() (string, error) {
+	dir, err := os.UserHomeDir()
+	if err != nil {
+		return "", errors.New("Could not determine user home directory: " + err.Error())
+	}
+	return dir, nil
 }
 
 func sshCheckup() error {
