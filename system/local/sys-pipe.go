@@ -2,8 +2,12 @@ package local
 
 import (
 	"bytes"
+	"crypto/sha256"
+	"encoding/hex"
 	"errors"
 	"fmt"
+	"io"
+	"net/http"
 	"os"
 	"os/exec"
 	"strings"
@@ -61,4 +65,43 @@ func RequireRoot() {
 		fmt.Println("This command requires root/sudo privileges! (try: sudo " + os.Args[0] + ")")
 		os.Exit(77)
 	}
+}
+
+func DownloadFile(url, dest, expectedSHA256 string) error {
+	response, err := http.Get(url)
+	if err != nil {
+		return fmt.Errorf("error downloading file: %s", err)
+	}
+	defer response.Body.Close()
+
+	if response.StatusCode != http.StatusOK {
+		return fmt.Errorf("failed to download file: received status code %d", response.StatusCode)
+	}
+
+	tmpDir, _ := os.UserHomeDir()
+	tmpFile, err := os.CreateTemp(tmpDir, "download-*")
+	if err != nil {
+		return fmt.Errorf("error creating temporary file: %s", err)
+	}
+	defer os.Remove(tmpFile.Name())
+
+	h := sha256.New()
+	mw := io.MultiWriter(tmpFile, h)
+	if _, err = io.Copy(mw, response.Body); err != nil {
+		return fmt.Errorf("error saving file: %s", err)
+	}
+	tmpFile.Close()
+
+	gotHash := hex.EncodeToString(h.Sum(nil))
+	if expectedSHA256 != "" && gotHash != expectedSHA256 {
+		return fmt.Errorf("checksum mismatch: expected %s, got %s", expectedSHA256, gotHash)
+	}
+
+	if err = os.Rename(tmpFile.Name(), dest); err != nil {
+		return fmt.Errorf("error moving file to destination: %s", err)
+	}
+	if err = os.Chmod(dest, 0755); err != nil {
+		return fmt.Errorf("error setting file permissions: %s", err)
+	}
+	return nil
 }
