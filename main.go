@@ -16,11 +16,6 @@ var sshMode = flag.Bool("ssh", false, "Run in SSH mode")
 
 func main() {
 	local.RequireRoot()
-	//runTUIMode()
-	//samples.Input()
-	//tui.RunForm()
-	//alert.SendSampleMail()
-	//tui.RunCreateProfile()
 	initSetup()
 }
 
@@ -80,6 +75,7 @@ func initSetup() {
 		fmt.Println("Failed to get user config dir:", err)
 		return
 	}
+
 	baseCfgPath := filepath.Join(cfgDir, "tufwgo")
 	authController := filepath.Join(baseCfgPath, "authorised_controllers.json")
 	pdcDir := filepath.Join(baseCfgPath, "pdc")
@@ -87,6 +83,12 @@ func initSetup() {
 	pdcBin := filepath.Join(pdcDir, "tufwgo-deploy")
 	profilesDir := filepath.Join(baseCfgPath, "profiles")
 	authBin := "/usr/bin/tufwgo-auth"
+	infraDir := filepath.Join(pdcDir, "infra")
+	infraInventory := filepath.Join(infraDir, "inventory.ini")
+	ansibleCfg := filepath.Join(infraDir, "ansible.cfg")
+	playbooksDir := filepath.Join(infraDir, "playbooks")
+	sendPlaybook := filepath.Join(playbooksDir, "send_profile.yml")
+	deployPlaybook := filepath.Join(playbooksDir, "deploy_profile.yml")
 
 	if _, err = os.Stat(baseCfgPath); err != nil {
 		fmt.Println("TUFWGo config not found, creating config folder...")
@@ -156,8 +158,69 @@ func initSetup() {
 			return
 		}
 		fmt.Println("Auth binary downloaded at", authBin)
+	}
+
+	if _, err = os.Stat(infraDir); err != nil {
+		fmt.Println("IaC directory not found, creating...")
+		err = os.MkdirAll(infraDir, 0700)
+		if err != nil {
+			fmt.Println("Failed to create infrastructure directory:", err)
+			return
+		}
+		fmt.Println("IaC directory created at", infraDir)
+	}
+
+	if _, err = os.Stat(infraInventory); err != nil {
+		fmt.Println("Ansible inventory file not found, downloading...")
+		err = local.DownloadFile("https://txrijwxmwfoempqmsuva.supabase.co/storage/v1/object/public/deploy%20infra/inventory.ini", infraInventory, "25b8c96e713334c8717656369e25de8dc86841f7af85571dd4f8887d350dde7e")
+		if err != nil {
+			fmt.Println("Failed to download Ansible inventory file:", err)
+			return
+		}
+		fmt.Println("Ansible inventory file downloaded at", infraInventory)
+	}
+
+	if _, err = os.Stat(ansibleCfg); err != nil {
+		fmt.Println("Ansible config file not found, downloading...")
+		err = local.DownloadFile("https://txrijwxmwfoempqmsuva.supabase.co/storage/v1/object/public/deploy%20infra/ansible.cfg", ansibleCfg, "bc25eb04b07fa67e6d13e7265fd26f49ba2080c70b10ba7d19da3a7fefdc22a8")
+		if err != nil {
+			fmt.Println("Failed to download Ansible config file:", err)
+			return
+		}
+		fmt.Println("Ansible config file downloaded at", ansibleCfg)
+	}
+
+	if _, err = os.Stat(playbooksDir); err != nil {
+		fmt.Println("Playbooks directory not found, creating...")
+		err = os.MkdirAll(playbooksDir, 0700)
+		if err != nil {
+			fmt.Println("Failed to create playbooks directory:", err)
+			return
+		}
+		fmt.Println("Playbooks directory created at", playbooksDir)
+	}
+
+	if _, err = os.Stat(sendPlaybook); err != nil {
+		fmt.Println("Profile flight playbook not found, downloading...")
+		err = local.DownloadFile("https://txrijwxmwfoempqmsuva.supabase.co/storage/v1/object/public/deploy%20infra/playbooks/send_profile.yml", sendPlaybook, "658de44a4212e55569c6f540274f890c66796145da2c22ab20796cfe98ee4691")
+		if err != nil {
+			fmt.Println("Failed to download profile flight playbook:", err)
+			return
+		}
+		fmt.Println("Profile flight playbook downloaded at", sendPlaybook)
+	}
+
+	if _, err = os.Stat(deployPlaybook); err != nil {
+		fmt.Println("Profile deployment playbook not found, downloading...")
+		err = local.DownloadFile("https://txrijwxmwfoempqmsuva.supabase.co/storage/v1/object/public/deploy%20infra/playbooks/deploy_profile.yml", deployPlaybook, "35d2bdc976f1ad5dc79d1975bfd952b0c5be723bbe45734245c9f05c8b64576e")
+		if err != nil {
+			fmt.Println("Failed to download profile deployment playbook:", err)
+			return
+		}
+		fmt.Println("Profile deployment playbook downloaded at", deployPlaybook)
 		initDone = true
 	}
+
 	if initDone {
 		fmt.Println("Initial setup completed.")
 	}
