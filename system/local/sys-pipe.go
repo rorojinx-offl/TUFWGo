@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
+	"regexp"
 	"strings"
 )
 
@@ -102,6 +103,23 @@ func DownloadFile(url, dest, expectedSHA256 string) error {
 	}
 	if err = os.Chmod(dest, 0755); err != nil {
 		return fmt.Errorf("error setting file permissions: %s", err)
+	}
+	return nil
+}
+
+func EditEnv(path, key, value string) error {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return fmt.Errorf("error reading env file: %s", err)
+	}
+	content := string(data)
+
+	regex := regexp.MustCompile(fmt.Sprintf("export %s='.*'", key))
+	newContent := regex.ReplaceAllString(content, fmt.Sprintf("export %s='%s'", key, value))
+
+	err = os.WriteFile(path, []byte(newContent), 0644)
+	if err != nil {
+		return fmt.Errorf("error writing env file: %s", err)
 	}
 	return nil
 }
