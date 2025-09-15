@@ -9,6 +9,8 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+
+	"github.com/joho/godotenv"
 )
 
 var skipTermCheck = flag.Bool("skip-term-check", false, "Skip the terminal size check")
@@ -89,6 +91,10 @@ func initSetup() {
 	playbooksDir := filepath.Join(infraDir, "playbooks")
 	sendPlaybook := filepath.Join(playbooksDir, "send_profile.yml")
 	deployPlaybook := filepath.Join(playbooksDir, "deploy_profile.yml")
+	auditDir := filepath.Join(baseCfgPath, "audit")
+	varDir := filepath.Join(baseCfgPath, "vars")
+	sgEnv := filepath.Join(varDir, "sendgrid.env")
+	auditKeyEnv := filepath.Join(varDir, "auditkey.env")
 
 	if _, err = os.Stat(baseCfgPath); err != nil {
 		fmt.Println("TUFWGo config not found, creating config folder...")
@@ -218,11 +224,79 @@ func initSetup() {
 			return
 		}
 		fmt.Println("Profile deployment playbook downloaded at", deployPlaybook)
+	}
+
+	if _, err = os.Stat(auditDir); err != nil {
+		fmt.Println("Audit directory not found, creating...")
+		err = os.MkdirAll(auditDir, 0700)
+		if err != nil {
+			fmt.Println("Failed to create audit directory:", err)
+			return
+		}
+		fmt.Println("Audit directory created at", auditDir)
+	}
+
+	if _, err = os.Stat(varDir); err != nil {
+		fmt.Println("Environment Variables directory not found, creating...")
+		err = os.MkdirAll(varDir, 0700)
+		if err != nil {
+			fmt.Println("Failed to create environment variables directory:", err)
+			return
+		}
+		fmt.Println("Environment Variables directory created at", varDir)
+	}
+
+	if _, err = os.Stat(sgEnv); err != nil {
+		fmt.Println("SendGrid environment file not found, downloading...")
+		err = local.DownloadFile("https://txrijwxmwfoempqmsuva.supabase.co/storage/v1/object/public/deploy%20vars/sendgrid.env", sgEnv, "e2958fbc972727a63920aec234977775dd947ad660a4cdcc81c50466a76643af")
+		if err != nil {
+			fmt.Println("Failed to download SendGrid environment file:", err)
+			return
+		}
+		fmt.Println("SendGrid environment file downloaded at", sgEnv)
+	}
+
+	if _, err = os.Stat(auditKeyEnv); err != nil {
+		fmt.Println("Audit key environment file not found, downloading...")
+		err = local.DownloadFile("https://txrijwxmwfoempqmsuva.supabase.co/storage/v1/object/public/deploy%20vars/auditkey.env", auditKeyEnv, "c20b42e3705265b35ae46c9d27714572eb0f8b0229eed2f3b68f072871bdc895")
+		if err != nil {
+			fmt.Println("Failed to download audit key environment file:", err)
+			return
+		}
+		fmt.Println("Audit key environment file downloaded at", auditKeyEnv)
+	}
+
+	err = godotenv.Load(auditKeyEnv)
+	if err != nil {
+		fmt.Println("Failed to load audit key from env file:", err)
+		return
+	}
+
+	if os.Getenv("TUFWGO_AUDIT_KEY") == "" {
+		fmt.Println("Generating new audit key...")
+		key, err := local.RunCommand("openssl rand -base64 32")
+		if err != nil {
+			fmt.Println("Failed to generate audit key:", err)
+			return
+		}
+		err = local.EditEnv(auditKeyEnv, "TUFWGO_AUDIT_KEY", key)
+		if err != nil {
+			fmt.Println(err)
+			return
+		}
+		fmt.Println("Saved audit key to env file")
+
+		_, err = local.RunCommand(fmt.Sprintf("source %s", auditKeyEnv))
+		if err != nil {
+			fmt.Println("Failed to load audit key:", err)
+			return
+		}
 		initDone = true
 	}
 
 	if initDone {
 		fmt.Println("Initial setup completed.")
 	}
+
 	runTUIMode()
 }
