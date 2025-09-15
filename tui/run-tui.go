@@ -1,9 +1,10 @@
 package tui
 
 import (
+	"TUFWGo/audit"
+	"TUFWGo/system/local"
 	"TUFWGo/system/ssh"
 	"fmt"
-	"os"
 
 	tea "github.com/charmbracelet/bubbletea"
 )
@@ -31,15 +32,32 @@ func RunTUI() {
 		TabContent: tabContent,
 	}
 
+	auditor, err := audit.OpenDailyAuditLog()
+	if err != nil {
+		fmt.Println(err)
+	}
+	m.SetAuditor(auditor, getActor())
+
 	p := tea.NewProgram(m, tea.WithAltScreen())
 	if _, err := p.Run(); err != nil {
 		panic(err)
 	}
 }
 
-func RunCreateProfile() {
-	if _, err := tea.NewProgram(NewProfileModel(), tea.WithAltScreen()).Run(); err != nil {
-		fmt.Println("error:", err)
-		os.Exit(1)
+func getActor() string {
+	if ssh.GetSSHStatus() {
+		if err := ssh.Checkup(); err != nil {
+			return "Unknown"
+		}
+		remActor, err := ssh.CommandStream("echo \"$(whoami)@$(hostname)\"")
+		if err != nil {
+			return "Unknown"
+		}
+		return remActor
 	}
+	locActor, err := local.RunCommand("echo \"$(whoami)@$(hostname)\"")
+	if err != nil {
+		return "Unknown"
+	}
+	return locActor
 }
