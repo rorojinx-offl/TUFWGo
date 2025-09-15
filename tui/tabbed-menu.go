@@ -2,6 +2,7 @@ package tui
 
 import (
 	"TUFWGo/alert"
+	"TUFWGo/audit"
 	"TUFWGo/system/local"
 	"TUFWGo/system/ssh"
 	"TUFWGo/ufw"
@@ -29,6 +30,8 @@ type TabModel struct {
 	toastUntil  time.Time
 	cmd         string
 	rule        string
+	auditor     *audit.Log
+	actor       string
 }
 
 type confirmDeclined struct{ ReturnTo tea.Model }
@@ -57,6 +60,33 @@ type clearToast struct{}
 
 var structPass ufw.Form
 var emailInfo *alert.EmailInfo
+
+func (m *TabModel) SetAuditor(auditor *audit.Log, actor string) {
+	m.auditor = auditor
+	m.actor = actor
+}
+
+func (m *TabModel) auditAdd(action, result, cmd, errMsg string, extra []audit.Field) {
+	if m.auditor == nil {
+		return
+	}
+	actor := m.actor
+	err := ssh.Checkup()
+	if ssh.GetSSHStatus() && err == nil && ssh.GlobalHost != "" {
+		actor = actor + " via_ssh=" + ssh.GlobalHost
+	}
+
+	entry := &audit.Entry{
+		Actor:   actor,
+		Action:  action,
+		Command: cmd,
+		Result:  result,
+		Error:   errMsg,
+		Fields:  extra,
+	}
+
+	_ = m.auditor.Append(entry)
+}
 
 func (m *TabModel) Init() tea.Cmd {
 	return nil
@@ -132,14 +162,20 @@ func (m *TabModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if ssh.GetSSHStatus() {
 				if err = sshCheckup(); err != nil {
 					m.child = newErrorBoxModel("Couldn't connect via SSH!", fmt.Sprint("Unable to connect to SSH server: ", err), m.child)
+					m.auditAdd("ufw.add", "error", m.cmd, err.Error(), nil)
 					return m, nil
 				}
 				_, err = ssh.CommandStream(m.cmd)
 				if err != nil {
 					m.child = newErrorBoxModel("There was an error executing your command!", err.Error(), m.child)
+					m.auditAdd("ufw.add", "error", m.cmd, err.Error(), nil)
 					return m, nil
 				}
 				m.child = newSuccessBoxModel("UFW Rule added remotely:", m.cmd, m.child)
+				m.auditAdd("ufw.add", "success", m.cmd, "", []audit.Field{
+					{Name: "ssh_active", Value: "true"},
+					{Rule: structPass},
+				})
 
 				//Send email alert to admins
 				emailInfo = &alert.EmailInfo{}
@@ -151,6 +187,7 @@ func (m *TabModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				_, err = local.RunCommand(m.cmd)
 				if err != nil {
 					m.child = newErrorBoxModel("There was an error executing your command!", err.Error(), m.child)
+					m.auditAdd("ufw.add", "error", m.cmd, err.Error(), nil)
 					return m, nil
 				}
 			}
@@ -161,6 +198,9 @@ func (m *TabModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 			// Show success message for 5 seconds
 			m.child = newSuccessBoxModel("UFW successfully added the following Rule:", m.cmd, nil)
+			m.auditAdd("ufw.add", "success", m.cmd, "", []audit.Field{
+				{Rule: structPass},
+			})
 			m.toastUntil = time.Now().Add(5 * time.Second)
 			return m, tea.Tick(time.Until(m.toastUntil), func(time.Time) tea.Msg { return clearToast{} })
 		case DeleteConfirmation:
@@ -190,11 +230,13 @@ func (m *TabModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if ssh.GetSSHStatus() {
 				if err = sshCheckup(); err != nil {
 					m.child = newErrorBoxModel("Couldn't connect via SSH!", fmt.Sprint("Unable to connect to SSH server: ", err), m.child)
+					m.auditAdd("ufw.delete", "error", m.cmd, err.Error(), nil)
 					return m, nil
 				}
 				_, err = ssh.ConversationalCommentStream(m.cmd, "y\n")
 				if err != nil {
 					m.child = newErrorBoxModel("There was an error executing your command!", err.Error(), m.child)
+					m.auditAdd("ufw.delete", "error", m.cmd, err.Error(), nil)
 					return m, nil
 				}
 
@@ -203,12 +245,17 @@ func (m *TabModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				emailInfo.SendMail("Rule Deleted", m.cmd, nil)
 
 				m.child = newSuccessBoxModel("UFW Rule deleted remotely:", m.rule, nil)
+				m.auditAdd("ufw.delete", "success", m.cmd, "", []audit.Field{
+					{Name: "ssh_active", Value: "true"},
+					{DeletedRule: m.rule},
+				})
 				m.toastUntil = time.Now().Add(5 * time.Second)
 				return m, tea.Tick(time.Until(m.toastUntil), func(time.Time) tea.Msg { return clearToast{} })
 			} else {
 				_, err = local.CommandConversation(m.cmd, "y\n")
 				if err != nil {
 					m.child = newErrorBoxModel("There was an error executing your command!", err.Error(), m.child)
+					m.auditAdd("ufw.delete", "error", m.cmd, err.Error(), nil)
 					return m, nil
 				}
 			}
@@ -220,6 +267,9 @@ func (m *TabModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 			// Show success message for 5 seconds
 			m.child = newSuccessBoxModel("UFW successfully deleted the following Rule:", m.rule, nil)
+			m.auditAdd("ufw.delete", "success", m.cmd, "", []audit.Field{
+				{DeletedRule: m.rule},
+			})
 			m.toastUntil = time.Now().Add(5 * time.Second)
 			return m, tea.Tick(time.Until(m.toastUntil), func(time.Time) tea.Msg { return clearToast{} })
 		case clearToast:
