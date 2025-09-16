@@ -286,7 +286,7 @@ func initSetup() {
 		}
 		fmt.Println("Saved audit key to env file")
 
-		_, err = local.RunCommand(fmt.Sprintf("source %s", auditKeyEnv))
+		err = godotenv.Load(auditKeyEnv)
 		if err != nil {
 			fmt.Println("Failed to load audit key:", err)
 			return
