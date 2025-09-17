@@ -37,6 +37,7 @@ func RunTUI() {
 		fmt.Println(err)
 	}
 	m.SetAuditor(auditor, getActor())
+	audit.SetGlobalAuditor(auditor, getActor())
 
 	p := tea.NewProgram(m, tea.WithAltScreen())
 	if _, err := p.Run(); err != nil {

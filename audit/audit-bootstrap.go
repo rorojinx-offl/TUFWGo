@@ -93,3 +93,18 @@ func prevFileLastHash(auditDir string, key []byte, day time.Time) (string, error
 	}
 	return vrf.LastHashHex, nil
 }
+
+var globalAuditor *Log
+var globalActor string
+
+func SetGlobalAuditor(auditor *Log, actor string) {
+	globalAuditor = auditor
+	globalActor = actor
+}
+
+func GetGlobalAuditor() (*Log, string) {
+	if globalAuditor != nil && globalActor != "" {
+		return globalAuditor, globalActor
+	}
+	return nil, ""
+}
