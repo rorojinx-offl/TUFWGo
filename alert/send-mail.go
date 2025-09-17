@@ -1,19 +1,21 @@
 package alert
 
 import (
+	"TUFWGo/audit"
 	"TUFWGo/system/ssh"
 	"TUFWGo/ufw"
 	"bufio"
 	"context"
 	"errors"
 	"fmt"
-	"github.com/sendgrid/sendgrid-go"
-	"github.com/sendgrid/sendgrid-go/helpers/mail"
 	"os"
 	"path/filepath"
 	"regexp"
 	"strings"
 	"time"
+
+	"github.com/sendgrid/sendgrid-go"
+	"github.com/sendgrid/sendgrid-go/helpers/mail"
 )
 
 var emailRegex = regexp.MustCompile(`^[^\s@]+@[^\s@]+\.[^\s@]+$`)
@@ -94,23 +96,40 @@ func batches[T any](in []T, n int) [][]T {
 	return out
 }
 
+func addAudit(action, result, comment, errMsg string) {
+	auditor, actor := audit.GetGlobalAuditor()
+	if auditor == nil {
+		return
+	}
+
+	entry := &audit.Entry{
+		Actor:   actor,
+		Action:  action,
+		Command: comment,
+		Result:  result,
+		Error:   errMsg,
+	}
+
+	_ = auditor.Append(entry)
+}
+
 func (e *EmailInfo) SendMail(action, cmd string, rule *ufw.Form) {
 	e.prepareEmailInfo(action, cmd, rule)
 
 	apiKey := os.Getenv("SENDGRID_API_KEY")
 	if apiKey == "" {
-		fmt.Println("WARNING: SendGrid API key not set")
+		addAudit("email.api", "error", "", "WARNING: SendGrid API key not set")
 		return
 	}
 	client := sendgrid.NewSendClient(apiKey)
 
 	recips, err := loadEmails()
 	if err != nil {
-		fmt.Println("WARNING: Unable to load email list:", err)
+		addAudit("email.recipients", "error", "WARNING: Unable to load email list:", err.Error())
 		return
 	}
 	if len(recips) == 0 {
-		fmt.Println("No email recipients found, skipping email alert")
+		addAudit("email.recipients", "warning", "No email recipients found, skipping email alert", "")
 		return
 	}
 
@@ -148,13 +167,14 @@ func (e *EmailInfo) SendMail(action, cmd string, rule *ufw.Form) {
 
 		response, clientErr := client.SendWithContext(ctx, msg)
 		if clientErr != nil {
-			fmt.Printf("send failed: %v\n", clientErr)
+			addAudit("email.send", "error", "Send Failed", clientErr.Error())
 			return
 		}
 		if response.StatusCode >= 400 {
-			fmt.Printf("send failed: status %d, body: %s\n", response.StatusCode, response.Body)
+			addAudit("email.send", "error", "Send Failed", fmt.Sprintf("status %d, body: %s", response.StatusCode, response.Body))
 			return
 		}
-		//fmt.Printf("Email batch sent successfully to %d recipients, status code: %d\n", len(batch), response.StatusCode)
+
+		addAudit("email.send", "success", "Send Succeeded", fmt.Sprintf("number of recipients: %d, status: %d", len(batch), response.StatusCode))
 	}
 }
