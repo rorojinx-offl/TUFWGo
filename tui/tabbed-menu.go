@@ -66,7 +66,7 @@ func (m *TabModel) SetAuditor(auditor *audit.Log, actor string) {
 	m.actor = actor
 }
 
-func (m *TabModel) auditAdd(action, result, cmd, errMsg string, extra []audit.Field) {
+func (m *TabModel) auditAdd(action, result, cmd, errMsg string, profCmds []string, extra []audit.Field) {
 	if m.auditor == nil {
 		return
 	}
@@ -77,12 +77,13 @@ func (m *TabModel) auditAdd(action, result, cmd, errMsg string, extra []audit.Fi
 	}
 
 	entry := &audit.Entry{
-		Actor:   actor,
-		Action:  action,
-		Command: cmd,
-		Result:  result,
-		Error:   errMsg,
-		Fields:  extra,
+		Actor:       actor,
+		Action:      action,
+		Command:     cmd,
+		Result:      result,
+		Error:       errMsg,
+		ProfCommand: profCmds,
+		Fields:      extra,
 	}
 
 	_ = m.auditor.Append(entry)
@@ -162,17 +163,17 @@ func (m *TabModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if ssh.GetSSHStatus() {
 				if err = sshCheckup(); err != nil {
 					m.child = newErrorBoxModel("Couldn't connect via SSH!", fmt.Sprint("Unable to connect to SSH server: ", err), m.child)
-					m.auditAdd("ufw.add", "error", m.cmd, err.Error(), nil)
+					m.auditAdd("ufw.add", "error", m.cmd, err.Error(), nil, nil)
 					return m, nil
 				}
 				_, err = ssh.CommandStream(m.cmd)
 				if err != nil {
 					m.child = newErrorBoxModel("There was an error executing your command!", err.Error(), m.child)
-					m.auditAdd("ufw.add", "error", m.cmd, err.Error(), nil)
+					m.auditAdd("ufw.add", "error", m.cmd, err.Error(), nil, nil)
 					return m, nil
 				}
 				m.child = newSuccessBoxModel("UFW Rule added remotely:", m.cmd, m.child)
-				m.auditAdd("ufw.add", "success", m.cmd, "", []audit.Field{
+				m.auditAdd("ufw.add", "success", m.cmd, "", nil, []audit.Field{
 					{Name: "ssh_active", Value: "true"},
 					{Rule: structPass},
 				})
@@ -187,7 +188,7 @@ func (m *TabModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				_, err = local.RunCommand(m.cmd)
 				if err != nil {
 					m.child = newErrorBoxModel("There was an error executing your command!", err.Error(), m.child)
-					m.auditAdd("ufw.add", "error", m.cmd, err.Error(), nil)
+					m.auditAdd("ufw.add", "error", m.cmd, err.Error(), nil, nil)
 					return m, nil
 				}
 			}
@@ -198,7 +199,7 @@ func (m *TabModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 			// Show success message for 5 seconds
 			m.child = newSuccessBoxModel("UFW successfully added the following Rule:", m.cmd, nil)
-			m.auditAdd("ufw.add", "success", m.cmd, "", []audit.Field{
+			m.auditAdd("ufw.add", "success", m.cmd, "", nil, []audit.Field{
 				{Rule: structPass},
 			})
 			m.toastUntil = time.Now().Add(5 * time.Second)
@@ -230,13 +231,13 @@ func (m *TabModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if ssh.GetSSHStatus() {
 				if err = sshCheckup(); err != nil {
 					m.child = newErrorBoxModel("Couldn't connect via SSH!", fmt.Sprint("Unable to connect to SSH server: ", err), m.child)
-					m.auditAdd("ufw.delete", "error", m.cmd, err.Error(), nil)
+					m.auditAdd("ufw.delete", "error", m.cmd, err.Error(), nil, nil)
 					return m, nil
 				}
 				_, err = ssh.ConversationalCommentStream(m.cmd, "y\n")
 				if err != nil {
 					m.child = newErrorBoxModel("There was an error executing your command!", err.Error(), m.child)
-					m.auditAdd("ufw.delete", "error", m.cmd, err.Error(), nil)
+					m.auditAdd("ufw.delete", "error", m.cmd, err.Error(), nil, nil)
 					return m, nil
 				}
 
@@ -245,7 +246,7 @@ func (m *TabModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				emailInfo.SendMail("Rule Deleted", m.cmd, nil)
 
 				m.child = newSuccessBoxModel("UFW Rule deleted remotely:", m.rule, nil)
-				m.auditAdd("ufw.delete", "success", m.cmd, "", []audit.Field{
+				m.auditAdd("ufw.delete", "success", m.cmd, "", nil, []audit.Field{
 					{Name: "ssh_active", Value: "true"},
 					{DeletedRule: m.rule},
 				})
@@ -255,7 +256,7 @@ func (m *TabModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				_, err = local.CommandConversation(m.cmd, "y\n")
 				if err != nil {
 					m.child = newErrorBoxModel("There was an error executing your command!", err.Error(), m.child)
-					m.auditAdd("ufw.delete", "error", m.cmd, err.Error(), nil)
+					m.auditAdd("ufw.delete", "error", m.cmd, err.Error(), nil, nil)
 					return m, nil
 				}
 			}
@@ -267,7 +268,7 @@ func (m *TabModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 			// Show success message for 5 seconds
 			m.child = newSuccessBoxModel("UFW successfully deleted the following Rule:", m.rule, nil)
-			m.auditAdd("ufw.delete", "success", m.cmd, "", []audit.Field{
+			m.auditAdd("ufw.delete", "success", m.cmd, "", nil, []audit.Field{
 				{DeletedRule: m.rule},
 			})
 			m.toastUntil = time.Now().Add(5 * time.Second)
@@ -280,6 +281,13 @@ func (m *TabModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 		case ProfileDone:
 			m.child = nil
+			return m, nil
+		case ProfCreateAudit:
+			if child.Err != nil {
+				m.auditAdd("profile.create", "error", "", child.Err.Error(), nil, nil)
+				return m, nil
+			}
+			m.auditAdd("profile.create", "success", "", "", nil, nil)
 			return m, nil
 		case ReturnFromProfile:
 			m.child = nil

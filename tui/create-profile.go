@@ -3,13 +3,14 @@ package tui
 import (
 	"errors"
 	"fmt"
-	"github.com/charmbracelet/bubbles/textinput"
-	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
 	"os"
 	"path/filepath"
 	"regexp"
 	"strings"
+
+	"github.com/charmbracelet/bubbles/textinput"
+	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/lipgloss"
 )
 
 type ProfileModel struct {
@@ -29,6 +30,7 @@ type RuleSet struct {
 }
 
 type ProfileDone struct{}
+type ProfCreateAudit struct{ Err error }
 
 func NewProfileModel() *ProfileModel {
 	ti := textinput.New()
@@ -57,16 +59,16 @@ func (m *ProfileModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			name := strings.TrimSpace(m.ti.Value())
 			if name == "" {
 				m.errMsg = "Profile name cannot be empty"
-				return m, nil
+				return m, func() tea.Msg { return ProfCreateAudit{Err: errors.New(m.errMsg)} }
 			}
 			path, err := saveEmptyRuleSet(name)
 			if err != nil {
 				m.errMsg = fmt.Sprintf("Error saving profile: %v", err)
-				return m, nil
+				return m, func() tea.Msg { return ProfCreateAudit{Err: err} }
 			} else {
 				m.savedMsg = fmt.Sprintf("Profile saved to %s", path)
 				m.done = true
-				return m, nil
+				return m, func() tea.Msg { return ProfCreateAudit{} }
 			}
 		}
 	}
