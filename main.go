@@ -291,6 +291,21 @@ func initSetup() {
 			fmt.Println("Failed to load audit key:", err)
 			return
 		}
+	}
+
+	err = godotenv.Load(sgEnv)
+	if err != nil {
+		fmt.Println("Failed to load SendGrid env file:", err)
+		return
+	}
+	if os.Getenv("SENDGRID_API_KEY") == "" {
+		fmt.Println("SENDGRID_API_KEY not set in sendgrid.env. Please edit the file and add your SendGrid API key to enable email notifications.")
+	} else {
+		err = godotenv.Load(sgEnv)
+		if err != nil {
+			fmt.Println("Failed to load SendGrid API key:", err)
+			return
+		}
 		initDone = true
 	}
 
