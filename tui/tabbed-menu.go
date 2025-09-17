@@ -363,9 +363,11 @@ func (m *TabModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.selected = ""
 		case "Test SSH Connection":
 			if err := sshCheckup(); err != nil {
+				m.auditAdd("ssh.test", "error", "SSH Test attempted", err.Error(), nil, nil)
 				m.child = newErrorBoxModel("SSH Connection Failed!", fmt.Sprint("Unable to connect to SSH server: ", err), m.child)
 
 			} else {
+				m.auditAdd("ssh.test", "success", "SSH Test attempted", "", nil, nil)
 				m.child = newSuccessBoxModel("SSH Connection Successful!", "You are now connected via SSH!", m.child)
 			}
 			m.selected = ""
