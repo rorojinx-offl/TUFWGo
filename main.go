@@ -80,6 +80,7 @@ func initSetup() {
 
 	baseCfgPath := filepath.Join(cfgDir, "tufwgo")
 	authController := filepath.Join(baseCfgPath, "authorised_controllers.json")
+	emailList := filepath.Join(baseCfgPath, "emails.txt")
 	pdcDir := filepath.Join(baseCfgPath, "pdc")
 	pdcLogs := filepath.Join(pdcDir, "logs")
 	pdcBin := filepath.Join(pdcDir, "tufwgo-deploy")
@@ -114,6 +115,16 @@ func initSetup() {
 			return
 		}
 		fmt.Println("Authorised controllers file created at", authController)
+	}
+
+	if _, err = os.Stat(emailList); err != nil {
+		fmt.Println("Email list file not found, downloading...")
+		err = local.DownloadFile("https://txrijwxmwfoempqmsuva.supabase.co/storage/v1/object/public/misc/emails.txt", emailList, "8922be73ea4f18847da317ff1373b71ad2f16a963c131e7b420c8a0199c95277")
+		if err != nil {
+			fmt.Println("Failed to download email list file:", err)
+			return
+		}
+		fmt.Println("Email list file downloaded at", emailList)
 	}
 
 	if _, err = os.Stat(pdcDir); err != nil {
