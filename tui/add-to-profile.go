@@ -1,18 +1,21 @@
 package tui
 
 import (
+	"TUFWGo/audit"
+	"TUFWGo/system/ssh"
 	"TUFWGo/ufw"
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"github.com/charmbracelet/bubbles/textinput"
-	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
 	"os"
 	"path/filepath"
 	"sort"
 	"strings"
 	"time"
+
+	"github.com/charmbracelet/bubbles/textinput"
+	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/lipgloss"
 )
 
 type profileSelectModel struct {
@@ -395,12 +398,16 @@ type profilesFlow struct {
 	commands        []string
 	rules           []ruleFormat
 	selectedProfile string
+	auditor         *audit.Log
+	actor           string
 }
 
 type sealProbe struct {
 	Commands []string `json:"commands"`
 	Rules    []string `json:"rules"`
 }
+
+type ProfAddAudit struct{}
 
 func profileIsSealed(path string) (bool, error) {
 	b, err := os.ReadFile(path)
@@ -439,6 +446,33 @@ func NewProfilesFlow() *profilesFlow {
 	return &profilesFlow{
 		child: NewProfileSelect(baseDir+"/tufwgo/profiles", onChoose),
 	}
+}
+
+func (m *profilesFlow) SetAuditorForAP(auditor *audit.Log, actor string) {
+	m.auditor = auditor
+	m.actor = actor
+}
+
+func (m *profilesFlow) auditAddAP(action, result, errMsg string, profCmds []string, extra []audit.Field) {
+	if m.auditor == nil {
+		return
+	}
+	actor := m.actor
+	err := ssh.Checkup()
+	if ssh.GetSSHStatus() && err == nil && ssh.GlobalHost != "" {
+		actor = actor + " via_ssh=" + ssh.GlobalHost
+	}
+
+	entry := &audit.Entry{
+		Actor:       actor,
+		Action:      action,
+		Result:      result,
+		Error:       errMsg,
+		ProfCommand: profCmds,
+		Fields:      extra,
+	}
+
+	_ = m.auditor.Append(entry)
 }
 
 func (m *profilesFlow) Init() tea.Cmd { return nil }
@@ -480,15 +514,18 @@ func (m *profilesFlow) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 			data, err := json.MarshalIndent(rs, "", "  ")
 			if err != nil {
+				m.auditAddAP("profile.add", "error", err.Error(), m.commands, nil)
 				m.child = newErrorBoxModel("Failed to serialize ruleset:", err.Error(), m)
 				return m, nil
 			}
 			err = os.WriteFile(profilePath, data, 0o644)
 			if err != nil {
+				m.auditAddAP("profile.add", "error", err.Error(), m.commands, nil)
 				m.child = newErrorBoxModel("Failed to write ruleset to file:", err.Error(), m)
 				return m, nil
 			}
 
+			m.auditAddAP("profile.add", "success", "", m.commands, nil)
 			m.child = newSuccessBoxModel(fmt.Sprintf("Successfully wrote ruleset to profile: %s", strings.Trim(profile, ".json")), fmt.Sprintf("Profile is located at: %s", profilePath), returnMsg(ProfileDone{}))
 			return m, nil
 		}
