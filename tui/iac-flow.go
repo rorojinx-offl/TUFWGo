@@ -1,6 +1,8 @@
 package tui
 
 import (
+	"TUFWGo/audit"
+	"TUFWGo/system/ssh"
 	"bufio"
 	"fmt"
 	"io"
@@ -30,8 +32,9 @@ type IACActionChosen struct{ Action IACAction }
 
 type IACRunStart struct{ Plan *CmdPlan }
 type IACRunDone struct {
-	Out string
-	Err error
+	Out     string
+	Err     error
+	Command string
 }
 type IACReturnToAction struct{}
 
@@ -52,6 +55,8 @@ type iacFlow struct {
 	child           tea.Model
 	cfg             AnsibleConfig
 	selectedProfile string // file name only (same pattern as add-to-profile)
+	auditor         *audit.Log
+	actor           string
 }
 
 func NewIACFlow(cfg *AnsibleConfig) *iacFlow {
@@ -59,6 +64,33 @@ func NewIACFlow(cfg *AnsibleConfig) *iacFlow {
 		cfg:   *cfg,
 		child: newPreflightView(),
 	}
+}
+
+func (m *iacFlow) SetAuditorForIAC(auditor *audit.Log, actor string) {
+	m.auditor = auditor
+	m.actor = actor
+}
+
+func (m *iacFlow) auditAddIAC(action, result, cmd, errMsg string, extra []audit.Field) {
+	if m.auditor == nil {
+		return
+	}
+	actor := m.actor
+	err := ssh.Checkup()
+	if ssh.GetSSHStatus() && err == nil && ssh.GlobalHost != "" {
+		actor = actor + " via_ssh=" + ssh.GlobalHost
+	}
+
+	entry := &audit.Entry{
+		Actor:   actor,
+		Action:  action,
+		Command: cmd,
+		Result:  result,
+		Error:   errMsg,
+		Fields:  extra,
+	}
+
+	_ = m.auditor.Append(entry)
 }
 
 func (m *iacFlow) Init() tea.Cmd { return runPreflightCmd(&m.cfg) }
@@ -78,6 +110,7 @@ func (m *iacFlow) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, nil
 
 		case IACPreflightFailed:
+			m.auditAddIAC("profile.deploy", "error", "Unauthorised attempt to use PDC", v.Err.Error(), nil)
 			m.child = newErrorBoxModel("Preflight Check Failed", v.Err.Error(), m.child)
 			return m, nil
 
@@ -106,9 +139,12 @@ func (m *iacFlow) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		case IACRunDone:
 			if v.Err != nil {
+				m.auditAddIAC("profile.deploy", "error", v.Command, v.Err.Error(), nil)
 				m.child = newErrorBoxModel("Ansible Failed", v.Err.Error()+"\n\n"+v.Out, m.child)
 				return m, nil
 			}
+
+			m.auditAddIAC("profile.deploy", "success", v.Command, "", nil)
 			// Show output then jump back to the Action menu
 			m.child = newSuccessBoxModel("Ansible task completed.", v.Out, returnMsg(IACReturnToAction{}))
 			return m, nil
@@ -215,10 +251,13 @@ func (r *iacRunner) View() string {
 		lipgloss.NewStyle().Faint(true).Render("Press Esc to exit")
 }
 
+var cmdStr string
+
 func startAnsibleProc(plan *CmdPlan, ch chan tea.Msg) tea.Cmd {
 	return func() tea.Msg {
 		cmd := exec.Command(plan.Name, plan.Args...)
 		cmd.Dir = plan.WorkDir
+		cmdStr = cmd.String()
 
 		stdout, err1 := cmd.StdoutPipe()
 		stderr, err2 := cmd.StderrPipe()
@@ -226,7 +265,7 @@ func startAnsibleProc(plan *CmdPlan, ch chan tea.Msg) tea.Cmd {
 			return IACRunDone{Err: fmt.Errorf("pipe error: %v %v", err1, err2)}
 		}
 		if err := cmd.Start(); err != nil {
-			return IACRunDone{Err: err}
+			return IACRunDone{Err: err, Command: cmdStr}
 		}
 
 		go scanToMsgs(stdout, func(s string) { ch <- IACStdout{Line: s} })
@@ -234,7 +273,7 @@ func startAnsibleProc(plan *CmdPlan, ch chan tea.Msg) tea.Cmd {
 
 		go func() {
 			err := cmd.Wait()
-			ch <- IACRunDone{Err: err}
+			ch <- IACRunDone{Err: err, Command: cmdStr}
 			close(ch)
 		}()
 		return nil
@@ -246,7 +285,7 @@ func listenAnsible(ch <-chan tea.Msg) tea.Cmd {
 		if msg, ok := <-ch; ok {
 			return msg
 		}
-		return IACRunDone{Err: nil}
+		return IACRunDone{Err: nil, Command: cmdStr}
 	}
 }
 
