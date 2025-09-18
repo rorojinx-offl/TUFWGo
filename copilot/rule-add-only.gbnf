@@ -1,0 +1,30 @@
+root ::= obj
+ws   ::= [ \t\n\r]*
+
+obj ::= "{" ws
+          "\"intent\"" ws ":" ws "\"rule_add\"" ws "," ws
+          "\"rules\""  ws ":" ws "[" ws rule_list? ws "]"
+        ws "}"
+
+rule_list ::= rule (ws "," ws rule)*
+
+rule ::= "{" ws
+           "\"action\""      ws ":" ws action ws "," ws
+           "\"direction\""   ws ":" ws dir_opt ws "," ws
+           "\"interface\""   ws ":" ws str_opt ws "," ws
+           "\"from\""        ws ":" ws str_opt ws "," ws
+           "\"to\""          ws ":" ws str_opt ws "," ws
+           "\"port\""        ws ":" ws str_opt ws "," ws
+           "\"protocol\""    ws ":" ws proto_opt ws "," ws
+           "\"app_profile\"" ws ":" ws str_opt
+         ws "}"
+
+action   ::= "\"allow\"" | "\"deny\"" | "\"reject\"" | "\"limit\""
+dir_opt  ::= "\"\"" | "\"in\"" | "\"out\""
+proto_opt::= "\"\"" | "\"tcp\"" | "\"udp\"" | "\"tcp/udp\"" | "\"udp/tcp\"" | "\"all\"" | "\"esp\"" | "\"ah\"" | "\"gre\"" | "\"icmp\"" | "\"ipv6\""
+
+# Optional strings are "" or normal JSON string.
+str_opt  ::= "\"\"" | string
+string   ::= "\"" char* "\""
+char     ::= [^"\\] | "\\" ["\\/bfnrt] | "\\u" hex hex hex hex
+hex      ::= [0-9a-fA-F]
