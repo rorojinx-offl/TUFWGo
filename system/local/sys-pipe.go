@@ -12,6 +12,8 @@ import (
 	"os/exec"
 	"regexp"
 	"strings"
+
+	"github.com/schollz/progressbar/v3"
 )
 
 func prepareCommand(cmdStr string) (string, error) {
@@ -86,8 +88,10 @@ func DownloadFile(url, dest, expectedSHA256 string) error {
 	}
 	defer os.Remove(tmpFile.Name())
 
+	bar := progressbar.DefaultBytes(response.ContentLength, "downloading")
+
 	h := sha256.New()
-	mw := io.MultiWriter(tmpFile, h)
+	mw := io.MultiWriter(tmpFile, h, bar)
 	if _, err = io.Copy(mw, response.Body); err != nil {
 		return fmt.Errorf("error saving file: %s", err)
 	}
