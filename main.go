@@ -2,6 +2,7 @@ package main
 
 import (
 	"TUFWGo/auth"
+	"TUFWGo/copilot"
 	"TUFWGo/system/local"
 	"TUFWGo/system/ssh"
 	"TUFWGo/tui"
@@ -19,7 +20,11 @@ var copilotStp = flag.Bool("copilot-setup", false, "Setup copilot mode")
 
 func main() {
 	local.RequireRoot()
-	initSetup()
+	//initSetup()
+	err := copilot.ExampleCall()
+	if err != nil {
+		fmt.Println("LM Error:", err)
+	}
 }
 
 func runTUIMode() {
