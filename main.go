@@ -15,6 +15,7 @@ import (
 
 var skipTermCheck = flag.Bool("skip-term-check", false, "Skip the terminal size check")
 var sshMode = flag.Bool("ssh", false, "Run in SSH mode")
+var copilotStp = flag.Bool("copilot-setup", false, "Setup copilot mode")
 
 func main() {
 	local.RequireRoot()
@@ -65,6 +66,10 @@ func runTUIMode() {
 		return
 	}
 	if !*skipTermCheck && !local.TermCheck() {
+		return
+	}
+	if *copilotStp {
+		copilotSetup()
 		return
 	}
 	tui.RunTUI()
@@ -325,4 +330,44 @@ func initSetup() {
 	}
 
 	runTUIMode()
+}
+
+func copilotSetup() {
+	initdone := false
+	cfgDir, err := os.UserConfigDir()
+	if err != nil {
+		fmt.Println("Failed to get user config dir:", err)
+		return
+	}
+
+	baseCfgPath := filepath.Join(cfgDir, "tufwgo")
+	copilotDir := filepath.Join(baseCfgPath, "copilot")
+	ggufModel := filepath.Join(copilotDir, "mistral-7b-instruct-v0.2.Q4_K_M.gguf")
+
+	if _, err = os.Stat(copilotDir); err != nil {
+		fmt.Println("Copilot directory not found, creating...")
+		err = os.MkdirAll(copilotDir, 0700)
+		if err != nil {
+			fmt.Println("Failed to create copilot directory:", err)
+			return
+		}
+		fmt.Println("Copilot directory created at", copilotDir)
+	}
+
+	if _, err = os.Stat(ggufModel); err != nil {
+		fmt.Println("LM not found, downloading...")
+		err = local.DownloadFile("https://huggingface.co/TheBloke/Mistral-7B-Instruct-v0.2-GGUF/resolve/main/mistral-7b-instruct-v0.2.Q4_K_M.gguf?download=true", ggufModel, "3e0039fd0273fcbebb49228943b17831aadd55cbcbf56f0af00499be2040ccf9")
+		if err != nil {
+			fmt.Println("Failed to download LM:", err)
+			return
+		}
+		fmt.Println("LM downloaded at", ggufModel)
+		initdone = true
+	}
+
+	if initdone {
+		fmt.Println("Copilot setup completed.")
+	} else {
+		fmt.Println("Copilot already set up.")
+	}
 }
