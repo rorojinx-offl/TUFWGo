@@ -88,14 +88,22 @@ func DownloadFile(url, dest, expectedSHA256 string) error {
 	}
 	defer os.Remove(tmpFile.Name())
 
-	bar := progressbar.DefaultBytes(response.ContentLength, "downloading")
+	var bar *progressbar.ProgressBar
+	if response.ContentLength <= 0 {
+		bar = progressbar.NewOptions64(-1, progressbar.OptionSetDescription("downloading"),
+			progressbar.OptionShowBytes(true),
+			progressbar.OptionClearOnFinish())
+	} else {
+		bar = progressbar.DefaultBytes(response.ContentLength, "downloading")
+	}
 
 	h := sha256.New()
 	mw := io.MultiWriter(tmpFile, h, bar)
 	if _, err = io.Copy(mw, response.Body); err != nil {
 		return fmt.Errorf("error saving file: %s", err)
 	}
-	tmpFile.Close()
+	_ = tmpFile.Close()
+	_ = bar.Finish()
 
 	gotHash := hex.EncodeToString(h.Sum(nil))
 	if expectedSHA256 != "" && gotHash != expectedSHA256 {
