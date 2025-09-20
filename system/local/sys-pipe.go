@@ -2,6 +2,7 @@ package local
 
 import (
 	"bytes"
+	"context"
 	"crypto/sha256"
 	"encoding/hex"
 	"errors"
@@ -12,6 +13,7 @@ import (
 	"os/exec"
 	"regexp"
 	"strings"
+	"time"
 
 	"github.com/schollz/progressbar/v3"
 )
@@ -61,6 +63,16 @@ func CommandConversation(command, reply string) (string, error) {
 		return "", err
 	}
 	return out, nil
+}
+
+func CommandLiveOutput(command string) error {
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Minute)
+	defer cancel()
+
+	cmd := exec.CommandContext(ctx, "bash", "-c", command)
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	return cmd.Run()
 }
 
 func RequireRoot() {
