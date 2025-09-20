@@ -8,6 +8,7 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 
 	"github.com/joho/godotenv"
@@ -352,6 +353,16 @@ func copilotSetup() {
 			return
 		}
 		fmt.Printf("Copilot directory created at %s\n\n", copilotDir)
+	}
+
+	if _, err = exec.LookPath("ollama"); err != nil {
+		fmt.Println("Ollama not found, installing...")
+		err = local.CommandLiveOutput("curl -fsSL https://ollama.com/install.sh | sh")
+		if err != nil {
+			fmt.Println("Failed to install ollama:", err)
+			return
+		}
+		fmt.Print("Ollama installed!\n\n")
 	}
 
 	if _, err = os.Stat(ggufModel); err != nil {
