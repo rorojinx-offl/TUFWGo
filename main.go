@@ -2,7 +2,6 @@ package main
 
 import (
 	"TUFWGo/auth"
-	"TUFWGo/copilot"
 	"TUFWGo/system/local"
 	"TUFWGo/system/ssh"
 	"TUFWGo/tui"
@@ -20,11 +19,7 @@ var copilotStp = flag.Bool("copilot-setup", false, "Setup copilot mode")
 
 func main() {
 	local.RequireRoot()
-	//initSetup()
-	err := copilot.ExampleCall()
-	if err != nil {
-		fmt.Println("LM Error:", err)
-	}
+	initSetup()
 }
 
 func runTUIMode() {
@@ -114,7 +109,7 @@ func initSetup() {
 			fmt.Println("Failed to create config dir:", err)
 			return
 		}
-		fmt.Println("Config folder created at", baseCfgPath)
+		fmt.Printf("Config folder created at %s\n\n", baseCfgPath)
 	}
 
 	if _, err = os.Stat(authController); err != nil {
@@ -124,7 +119,7 @@ func initSetup() {
 			fmt.Println("Failed to create authorised controllers file:", err)
 			return
 		}
-		fmt.Println("Authorised controllers file created at", authController)
+		fmt.Printf("Authorised controllers file created at %s\n\n", authController)
 	}
 
 	if _, err = os.Stat(emailList); err != nil {
@@ -134,7 +129,7 @@ func initSetup() {
 			fmt.Println("Failed to download email list file:", err)
 			return
 		}
-		fmt.Println("Email list file downloaded at", emailList)
+		fmt.Printf("Email list file downloaded at %s\n\n", emailList)
 	}
 
 	if _, err = os.Stat(pdcDir); err != nil {
@@ -144,7 +139,7 @@ func initSetup() {
 			fmt.Println("Failed to create PDC directory:", err)
 			return
 		}
-		fmt.Println("PDC directory created at", pdcDir)
+		fmt.Printf("PDC directory created at %s\n\n", pdcDir)
 	}
 
 	if _, err = os.Stat(pdcLogs); err != nil {
@@ -154,7 +149,7 @@ func initSetup() {
 			fmt.Println("Failed to create PDC logs directory:", err)
 			return
 		}
-		fmt.Println("PDC logs directory created at", pdcLogs)
+		fmt.Printf("PDC logs directory created at %s\n\n", pdcLogs)
 	}
 
 	if _, err = os.Stat(pdcBin); err != nil {
@@ -164,7 +159,7 @@ func initSetup() {
 			fmt.Println("Failed to download PDC binary:", err)
 			return
 		}
-		fmt.Println("PDC binary downloaded at", pdcBin)
+		fmt.Printf("PDC binary downloaded at %s\n\n", pdcBin)
 	}
 
 	if _, err = os.Stat(profilesDir); err != nil {
@@ -174,7 +169,7 @@ func initSetup() {
 			fmt.Println("Failed to create profiles directory:", err)
 			return
 		}
-		fmt.Println("Profiles directory created at", profilesDir)
+		fmt.Printf("Profiles directory created at %s\n\n", profilesDir)
 	}
 
 	if _, err = os.Stat(authBin); err != nil {
@@ -184,7 +179,7 @@ func initSetup() {
 			fmt.Println("Failed to download auth binary:", err)
 			return
 		}
-		fmt.Println("Auth binary downloaded at", authBin)
+		fmt.Printf("Auth binary downloaded at %s\n\n", authBin)
 	}
 
 	if _, err = os.Stat(infraDir); err != nil {
@@ -194,7 +189,7 @@ func initSetup() {
 			fmt.Println("Failed to create infrastructure directory:", err)
 			return
 		}
-		fmt.Println("IaC directory created at", infraDir)
+		fmt.Printf("IaC directory created at %s\n\n", infraDir)
 	}
 
 	if _, err = os.Stat(infraInventory); err != nil {
@@ -204,7 +199,7 @@ func initSetup() {
 			fmt.Println("Failed to download Ansible inventory file:", err)
 			return
 		}
-		fmt.Println("Ansible inventory file downloaded at", infraInventory)
+		fmt.Printf("Ansible inventory file downloaded at %s\n\n", infraInventory)
 	}
 
 	if _, err = os.Stat(ansibleCfg); err != nil {
@@ -214,7 +209,7 @@ func initSetup() {
 			fmt.Println("Failed to download Ansible config file:", err)
 			return
 		}
-		fmt.Println("Ansible config file downloaded at", ansibleCfg)
+		fmt.Printf("Ansible config file downloaded at %s\n\n", ansibleCfg)
 	}
 
 	if _, err = os.Stat(playbooksDir); err != nil {
@@ -224,7 +219,7 @@ func initSetup() {
 			fmt.Println("Failed to create playbooks directory:", err)
 			return
 		}
-		fmt.Println("Playbooks directory created at", playbooksDir)
+		fmt.Printf("Playbooks directory created at %s\n\n", playbooksDir)
 	}
 
 	if _, err = os.Stat(sendPlaybook); err != nil {
@@ -234,7 +229,7 @@ func initSetup() {
 			fmt.Println("Failed to download profile flight playbook:", err)
 			return
 		}
-		fmt.Println("Profile flight playbook downloaded at", sendPlaybook)
+		fmt.Printf("Profile flight playbook downloaded at %s\n\n", sendPlaybook)
 	}
 
 	if _, err = os.Stat(deployPlaybook); err != nil {
@@ -244,7 +239,7 @@ func initSetup() {
 			fmt.Println("Failed to download profile deployment playbook:", err)
 			return
 		}
-		fmt.Println("Profile deployment playbook downloaded at", deployPlaybook)
+		fmt.Printf("Profile deployment playbook downloaded at %s\n\n", deployPlaybook)
 	}
 
 	if _, err = os.Stat(auditDir); err != nil {
@@ -254,7 +249,7 @@ func initSetup() {
 			fmt.Println("Failed to create audit directory:", err)
 			return
 		}
-		fmt.Println("Audit directory created at", auditDir)
+		fmt.Printf("Audit directory created at %s\n\n", auditDir)
 	}
 
 	if _, err = os.Stat(varDir); err != nil {
@@ -264,7 +259,7 @@ func initSetup() {
 			fmt.Println("Failed to create environment variables directory:", err)
 			return
 		}
-		fmt.Println("Environment Variables directory created at", varDir)
+		fmt.Printf("Environment Variables directory created at %s\n\n", varDir)
 	}
 
 	if _, err = os.Stat(sgEnv); err != nil {
@@ -274,7 +269,7 @@ func initSetup() {
 			fmt.Println("Failed to download SendGrid environment file:", err)
 			return
 		}
-		fmt.Println("SendGrid environment file downloaded at", sgEnv)
+		fmt.Printf("SendGrid environment file downloaded at %s\n\n", sgEnv)
 	}
 
 	if _, err = os.Stat(auditKeyEnv); err != nil {
@@ -284,7 +279,7 @@ func initSetup() {
 			fmt.Println("Failed to download audit key environment file:", err)
 			return
 		}
-		fmt.Println("Audit key environment file downloaded at", auditKeyEnv)
+		fmt.Printf("Audit key environment file downloaded at %s\n\n", auditKeyEnv)
 	}
 
 	err = godotenv.Load(auditKeyEnv)
@@ -305,7 +300,7 @@ func initSetup() {
 			fmt.Println(err)
 			return
 		}
-		fmt.Println("Saved audit key to env file")
+		fmt.Print("Saved audit key to env file\n\n")
 
 		err = godotenv.Load(auditKeyEnv)
 		if err != nil {
@@ -320,7 +315,7 @@ func initSetup() {
 		return
 	}
 	if os.Getenv("SENDGRID_API_KEY") == "" {
-		fmt.Println("SENDGRID_API_KEY not set in sendgrid.env. Please edit the file and add your SendGrid API key to enable email notifications.")
+		fmt.Print("SENDGRID_API_KEY not set in sendgrid.env. Please edit the file and add your SendGrid API key to enable email notifications.\n\n")
 	} else {
 		err = godotenv.Load(sgEnv)
 		if err != nil {
@@ -356,7 +351,7 @@ func copilotSetup() {
 			fmt.Println("Failed to create copilot directory:", err)
 			return
 		}
-		fmt.Println("Copilot directory created at", copilotDir)
+		fmt.Printf("Copilot directory created at %s\n\n", copilotDir)
 	}
 
 	if _, err = os.Stat(ggufModel); err != nil {
@@ -366,7 +361,7 @@ func copilotSetup() {
 			fmt.Println("Failed to download LM:", err)
 			return
 		}
-		fmt.Println("LM downloaded at", ggufModel)
+		fmt.Printf("LM downloaded at %s\n\n", ggufModel)
 		initdone = true
 	}
 
