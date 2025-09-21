@@ -1,107 +1,63 @@
 package copilot
 
 import (
+	"bytes"
+	"context"
+	"encoding/json"
+	"errors"
 	"fmt"
-	"os"
-	"path/filepath"
+	"io/ioutil"
+	"net/http"
+	"time"
 
-	"github.com/go-skynet/go-llama.cpp"
+	"github.com/taigrr/systemctl"
 )
 
-type LM struct {
-	model *llama.LLama
-}
-type LMOptions struct {
-	ModelPath string
-	Threads   int
-	Grammar   string
-}
+func checkOllamaDaemon() error {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
 
-func NewLM(opts *LMOptions) (*LM, error) {
-	params := []llama.ModelOption{llama.SetContext(2048)}
-	model, err := llama.New(opts.ModelPath, params...)
-	if err != nil {
-		return nil, fmt.Errorf("error loading language model: %s", err)
-	}
-
-	return &LM{model: model}, nil
-}
-
-func (l *LM) Close() { l.model.Free() }
-
-func buildPrompt(user string) string {
-	system := `You are a UFW assistant. ONLY output valid JSON that matches the schema below. No prose, no code fences, no markdown. If the request is out of scope, return with:
-	{"intent":"reject","rules":[],"defaults":{},"reason":"why"}.
-
-	Schema:
-	{
-		"intent": "rule_add",
-		"rules": [
-			{
-				"action": "allow | deny | reject | limit",
-				"direction": " | in | out",
-				"interface": "<string or empty>",
-				"from": " | any | <ip/cidr>",
-				"to": " | any | <ip/cidr>",
-				"port": " | <single>|<pipe-separated>|<range>",
-				"protocol": " | tcp | udp | tcp/udp | udp/tcp | all | esp | ah | gre | icmp | ipv6"
-				"app_profile": " | <string or empty>"
-			}
-		]
-	}`
-
-	return system + "\n\nUSER:\n" + user + "\nASSISTANT:\n"
-}
-
-func (l *LM) Call(GBNFGrammar string, userText string) ([]byte, error) {
-	prompt := buildPrompt(userText)
-
-	opts := []llama.PredictOption{
-		llama.SetTemperature(0.0),
-		llama.SetTopK(40),
-		llama.SetTopP(0.95),
-		llama.SetTokens(512),
-		llama.SetStopWords([]string{}...),
-		llama.WithGrammar(GBNFGrammar),
-	}
-
-	resp, err := l.model.Predict(prompt, opts...)
-	if err != nil {
-		return nil, fmt.Errorf("prediction error: %s", err)
-	}
-	return []byte(resp), nil
-}
-
-func mustReadFile(path string) string {
-	b, err := os.ReadFile(path)
-	if err != nil {
-		panic(err)
-	}
-	return string(b)
-}
-
-func ExampleCall() error {
-	homeDir, err := os.UserHomeDir()
+	isActive, err := systemctl.IsActive(ctx, "ollama", systemctl.Options{UserMode: false})
 	if err != nil {
 		return err
 	}
-	modelPath := filepath.Join(homeDir, "gguf-models", "mistral-7b-instruct-v0.2.Q4_K_M.gguf")
-	grammar := mustReadFile("copilot/rule-add-only.gbnf")
-	lm, err := NewLM(&LMOptions{
-		ModelPath: modelPath,
-		Threads:   0, // use all available cores
-		Grammar:   grammar,
-	})
+	isEnabled, err := systemctl.IsEnabled(ctx, "ollama", systemctl.Options{UserMode: false})
 	if err != nil {
 		return err
 	}
-	defer lm.Close()
-
-	response, err := lm.Call(grammar, "Allow incoming TCP traffic on port 22 from any IP address")
+	isFailed, err := systemctl.IsFailed(ctx, "ollama", systemctl.Options{UserMode: false})
 	if err != nil {
 		return err
 	}
 
-	fmt.Println(string(response))
+	if isActive && isEnabled && !isFailed {
+		return nil
+	} else {
+		return errors.New("ollama is not running")
+	}
+}
+func ollamaPull(baseURL, name string, timeout time.Duration) error {
+	body := map[string]any{"name": name, "stream": false}
+	b, _ := json.Marshal(body)
+	request, _ := http.NewRequest("POST", baseURL+"/api/pull", bytes.NewReader(b))
+	request.Header.Set("Content-Type", "application/json")
+	client := &http.Client{Timeout: timeout}
+	response, err := client.Do(request)
+	if err != nil {
+		return err
+	}
+	defer response.Body.Close()
+
+	all, _ := ioutil.ReadAll(response.Body)
+	if response.StatusCode != 200 {
+		return fmt.Errorf("failed to pull: %s", string(all))
+	}
+	return nil
+}
+
+func RunOllama() error {
+	if err := ollamaPull("http://localhost:11434", "rorojinx/tufwgo-slm", 5*time.Minute); err != nil {
+		return err
+	}
 	return nil
 }
