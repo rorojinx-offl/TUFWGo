@@ -56,8 +56,25 @@ func ollamaPull(baseURL, name string, timeout time.Duration) error {
 }
 
 func RunOllama() error {
+	if err := checkOllamaDaemon(); err != nil {
+		return err
+	}
 	if err := ollamaPull("http://localhost:11434", "rorojinx/tufwgo-slm", 5*time.Minute); err != nil {
 		return err
+	}
+
+	raw, err := generateStructure("http://localhost:11434", "rorojinx/tufwgo-slm", "Allow ssh from 10.0.0.5", 30*time.Second)
+	if err != nil {
+		return err
+	}
+
+	cmds, err := compileJSONToUFW(raw)
+	if err != nil {
+		return fmt.Errorf("invalid model output: %w", err)
+	}
+
+	for _, cmd := range cmds {
+		fmt.Println(cmd)
 	}
 	return nil
 }
