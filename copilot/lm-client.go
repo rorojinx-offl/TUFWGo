@@ -63,12 +63,14 @@ func RunOllama() error {
 		return err
 	}
 
-	raw, err := generateStructure("http://localhost:11434", "rorojinx/tufwgo-slm", "Allow ssh from 10.0.0.5", 30*time.Second)
+	raw, err := generateStructure("http://localhost:11434", "rorojinx/tufwgo-slm", "Allow ssh from 10.0.0.5", 5*time.Minute)
 	if err != nil {
 		return err
 	}
 
-	cmds, err := compileJSONToUFW(raw)
+	rawStr := string(raw)
+
+	cmds, err := CompileDSLToUFW(rawStr)
 	if err != nil {
 		return fmt.Errorf("invalid model output: %w", err)
 	}

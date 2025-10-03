@@ -2,12 +2,14 @@ package copilot
 
 import (
 	"TUFWGo/ufw"
+	"bufio"
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
-	"strconv"
+	"regexp"
 	"strings"
 	"time"
 )
@@ -15,7 +17,7 @@ import (
 type modelConstructor struct {
 	Model   string         `json:"model"`
 	Prompt  string         `json:"prompt"`
-	Format  any            `json:"format,omitempty"`
+	Stop    []string       `json:"stop,omitempty"`
 	Options map[string]any `json:"options,omitempty"`
 	Stream  bool           `json:"stream,omitempty"`
 }
@@ -23,65 +25,20 @@ type modelConstructor struct {
 type modelResponse struct {
 	Response string `json:"response"`
 	Error    string `json:"error"`
-}
-
-type rule struct {
-	Action     string `json:"action"`
-	Direction  string `json:"direction"`
-	Interface  string `json:"interface"`
-	From       string `json:"from"`
-	To         string `json:"to"`
-	Port       string `json:"port"`
-	Protocol   string `json:"protocol"`
-	AppProfile string `json:"app_profile"`
-}
-
-type payload struct {
-	Intent string `json:"intent"`
-	Rules  []rule `json:"rules"`
+	Done     bool   `json:"done"`
 }
 
 func buildPrompt(userPrompt string) string {
-	system := "You are a UFW assistant. ONLY output valid JSON that matches the schema below. No prose, no code fences, no markdown. If the request is out of scope, return with: {\"intent\":\"reject\",\"rules\":[],\"defaults\":{},\"reason\":\"why\"}. Schema: {\"intent\": \"rule_add\",\"rules\": [{\"action\": \"allow | deny | reject | limit\",\"direction\": \" | in | out\",\"interface\": \"<string or empty>\",\"from\": \" | any | <ip/cidr>\",\"to\": \" | any | <ip/cidr>\",\"port\": \" | <single>|<pipe-separated>|<range>\",\"protocol\": \" | tcp | udp | tcp/udp | udp/tcp | all | esp | ah | gre | icmp | ipv6\",\"app_profile\": \" | <string or empty>\"}]}"
+	system := "You are a UFW assistant. ONLY output a block between <BEGIN-UFW> and <END-UFW>. Each rule MUST be on exactly one line, starting with \"rule:\" and continuing with \"key=value;\" pairs, all separated by semicolons (NOT colons). DO NOT put each field on its own line. Follow the following format: rule: action=<allow|deny|reject|limit>; dir=< |in|out>; iface=<string or empty>; from=< |any|ip/cidr>; to=< |any|ip/cidr>; port=< |single|pipe-separated|range>; proto=< |tcp|udp|tcp/udp|udp/tcp|all|esp|ah|gre|icmp|ipv6>; app=<string or empty>. No prose, no code fences, no markdown. If the request is out of scope, return with an error. Do not output 'ufw ...' commands. Bad example (DO NOT DO): ufw allow in on ALL:1024/tcp FROM 10.0.0.5. Good example: <BEGIN-UFW> rule: action=allow; dir=in; iface=eth0; from=10.0.0.5; to=any; port=22; proto=tcp; app=<END-UFW>"
 
 	return system + "\n\nUSER:\n" + userPrompt + "\nASSISTANT:\n"
-}
-
-var ufwSchema = map[string]any{
-	"type": "object",
-	"properties": map[string]any{
-		"intent": map[string]any{
-			"type": "string",
-			"enum": []string{"rule_add"},
-		},
-		"rules": map[string]any{
-			"type": "array",
-			"items": map[string]any{
-				"type": "object",
-				"properties": map[string]any{
-					"action":      map[string]any{"type": "string", "enum": []string{"allow", "deny", "reject", "limit"}},
-					"direction":   map[string]any{"type": "string"},
-					"interface":   map[string]any{"type": "string"},
-					"from":        map[string]any{"type": "string"},
-					"to":          map[string]any{"type": "string"},
-					"port":        map[string]any{"type": "string"},
-					"protocol":    map[string]any{"type": "string", "enum": []string{"", "tcp", "udp", "tcp/udp", "udp/tcp", "all", "esp", "ah", "gre", "icmp", "ipv6"}},
-					"app_profile": map[string]any{"type": "string"},
-				},
-				"required":             []string{"action", "direction", "from", "to", "port", "protocol"},
-				"additionalProperties": false,
-			},
-		},
-	},
-	"required":             []string{"intent", "rules"},
-	"additionalProperties": false,
 }
 
 func generateStructure(baseURL, model, user string, timeout time.Duration) ([]byte, error) {
 	construct := modelConstructor{
 		Model:  model,
 		Prompt: buildPrompt(user),
-		Format: ufwSchema,
+		Stop:   []string{"<END-UFW>"},
 		Options: map[string]any{
 			"temperature": 0.0,
 			"num_ctx":     2048,
@@ -97,101 +54,118 @@ func generateStructure(baseURL, model, user string, timeout time.Duration) ([]by
 	}
 	defer resp.Body.Close()
 
-	all, _ := io.ReadAll(resp.Body)
 	if resp.StatusCode != 200 {
+		all, _ := io.ReadAll(resp.Body)
 		return nil, fmt.Errorf("failed to generate: %s", string(all))
 	}
 
-	var mr modelResponse
-	dec := json.NewDecoder(bytes.NewReader(all))
-	dec.UseNumber()
-	if err = dec.Decode(&mr); err != nil {
-		return nil, fmt.Errorf("decode error: %w", err)
-	}
-	if mr.Error != "" {
-		return nil, fmt.Errorf("ollama/model error: %s", mr.Error)
-	}
-	if len(mr.Response) == 0 {
-		return nil, fmt.Errorf("no empty response: %s", mr.Response)
-	}
-
-	rb := []byte(mr.Response)
-	if len(rb) > 0 {
-		switch rb[0] {
-		case '"':
-			unq, err := strconv.Unquote(string(rb))
-			if err != nil {
-				return nil, fmt.Errorf("invalid response: %w", err)
+	decode := json.NewDecoder(resp.Body)
+	var out strings.Builder
+	for {
+		var mr modelResponse
+		if err = decode.Decode(&mr); err != nil {
+			if errors.Is(err, io.EOF) {
+				break
 			}
-			return []byte(unq), nil
-		case '{', '[':
-			return rb, nil
-		default:
-			return nil, fmt.Errorf("invalid response: %s", string(rb))
+			return nil, fmt.Errorf("decode error: %w", err)
+		}
+		if mr.Error != "" {
+			return nil, fmt.Errorf("ollama error: %s", mr.Error)
+		}
+		out.WriteString(mr.Response)
+		if mr.Done {
+			break
 		}
 	}
-	return nil, fmt.Errorf("invalid response: %s", string(rb))
+
+	fmt.Printf("MODEL TEXT:\n%s\n", out.String())
+
+	return []byte(out.String()), nil
 }
 
-func compileJSONToUFW(raw []byte) ([]string, error) {
-	s := strings.TrimSpace(string(raw))
-	if strings.HasPrefix(s, "```") {
-		s = stripCodeFence(s)
+func CompileDSLToUFW(modelText string) ([]string, error) {
+	ruleBlock, err := extractBetween(modelText, "<BEGIN-UFW>", "<END-UFW>")
+	if err != nil {
+		return nil, err
 	}
 
-	if len(s) > 0 && s[0] == '"' {
-		if unq, err := strconv.Unquote(s); err == nil {
-			s = unq
+	scanner := bufio.NewScanner(strings.NewReader(ruleBlock))
+	scanner.Split(bufio.ScanLines)
+
+	ruleLine := regexp.MustCompile(`^\s*rule:\s*(.+)$`)
+	keyVal := regexp.MustCompile(`\s*([a-z_]+)\s*=\s*(.*?)\s*$`)
+
+	var commands []string
+	lineNum := 0
+
+	for scanner.Scan() {
+		line := strings.TrimSpace(scanner.Text())
+		if line == "" {
+			continue
 		}
-	}
+		lineNum++
 
-	fmt.Printf("RAW MODEL RESPONSE: \n%s\n", s)
+		m := ruleLine.FindStringSubmatch(line)
+		if m == nil {
+			return nil, fmt.Errorf("line %d: does not start with 'rule:'", lineNum)
+		}
 
-	var p payload
-	dec := json.NewDecoder(strings.NewReader(s))
-	if err := dec.Decode(&p); err != nil {
-		return nil, fmt.Errorf("model did not return valid JSON: %w", err)
+		fields := map[string]string{
+			"action": "",
+			"dir":    "",
+			"iface":  "",
+			"from":   "",
+			"to":     "",
+			"port":   "",
+			"proto":  "",
+			"app":    "",
+		}
+
+		for _, part := range strings.Split(m[1], ";") {
+			part = strings.TrimSpace(part)
+			if part == "" {
+				continue
+			}
+			keyMatch := keyVal.FindStringSubmatch(part)
+			if keyMatch == nil {
+				return nil, fmt.Errorf("line %d: invalid key-value pair '%s'", lineNum, part)
+			}
+			fields[keyMatch[1]] = keyMatch[2]
+		}
+
+		form := &ufw.Form{
+			Action:     fields["action"],
+			Direction:  fields["dir"],
+			Interface:  fields["iface"],
+			FromIP:     fields["from"],
+			ToIP:       fields["to"],
+			Port:       fields["port"],
+			Protocol:   fields["proto"],
+			AppProfile: fields["app"],
+		}
+
+		cmd, err := form.ParseForm()
+		if err != nil {
+			return nil, fmt.Errorf("line %d: %w", lineNum, err)
+		}
+		commands = append(commands, cmd)
 	}
-	if p.Intent == "" {
-		return nil, fmt.Errorf("intent not found: %q", p.Intent)
-	}
-	if p.Intent != "rule_add" {
-		return nil, fmt.Errorf("unsupported intent: %q", p.Intent)
-	}
-	if len(p.Rules) == 0 {
+	if len(commands) == 0 {
 		return nil, fmt.Errorf("no rules found")
 	}
-
-	cmds := make([]string, 0, len(p.Rules))
-	for i, r := range p.Rules {
-		if r.AppProfile != "" && !(r.Action == "allow" || r.Action == "deny") {
-			return nil, fmt.Errorf("rule %d: app profile requires action 'allow' or 'deny' only", i)
-		}
-
-		format := &ufw.Form{
-			Action:     r.Action,
-			Direction:  r.Direction,
-			Interface:  r.Interface,
-			FromIP:     r.From,
-			ToIP:       r.To,
-			Port:       r.Port,
-			Protocol:   r.Protocol,
-			AppProfile: r.AppProfile,
-		}
-
-		cmd, err := format.ParseForm()
-		if err != nil {
-			return nil, fmt.Errorf("rule %d: %w", i, err)
-		}
-		cmds = append(cmds, cmd)
-	}
-	return cmds, nil
+	return commands, nil
 }
 
-func stripCodeFence(s string) string {
-	s = strings.TrimPrefix(s, "```json")
-	s = strings.TrimPrefix(s, "```JSON")
-	s = strings.TrimPrefix(s, "```")
-	s = strings.TrimSuffix(s, "```")
-	return strings.TrimSpace(s)
+func extractBetween(body, start, end string) (string, error) {
+	i := strings.Index(body, start)
+	if i < 0 {
+		return "", fmt.Errorf("start pointer not found")
+	}
+
+	j := strings.Index(body[i+len(start):], end)
+	if j < 0 {
+		return "", fmt.Errorf("end pointer not found")
+	}
+
+	return body[i+len(start) : i+len(start)+j], nil
 }
