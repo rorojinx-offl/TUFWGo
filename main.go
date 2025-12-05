@@ -2,7 +2,6 @@ package main
 
 import (
 	"TUFWGo/auth"
-	"TUFWGo/copilot"
 	"TUFWGo/system/local"
 	"TUFWGo/system/ssh"
 	"TUFWGo/tui"
@@ -18,19 +17,70 @@ import (
 var skipTermCheck = flag.Bool("skip-term-check", false, "Skip the terminal size check")
 var sshMode = flag.Bool("ssh", false, "Run in SSH mode")
 var copilotStp = flag.Bool("copilot-setup", false, "Setup copilot mode")
+var email = flag.Bool("email", false, "Edit mailing list")
+var ansibleCfg = flag.Bool("ansible-config", false, "Edit Ansible config")
+var ansibleInv = flag.Bool("ansible-inv", false, "Edit Ansible inventory")
+var spp = flag.Bool("ansible-sppb", false, "Edit the send_profile Ansible playbook")
+var dpp = flag.Bool("ansible-dppb", false, "Edit the deploy_profile Ansible playbook")
+var sendgrid = flag.Bool("sendgrid", false, "Add/Edit SendGrid Email API Key")
 
 func main() {
 	local.RequireRoot()
-	//initSetup()
-	err := copilot.RunOllama()
+	initSetup()
+	/*err := copilot.RunOllama()
 	if err != nil {
 		fmt.Println("Failed to run copilot:", err)
 		return
-	}
+	}*/
 }
 
 func runTUIMode() {
 	flag.Parse()
+	local.InitPaths()
+
+	if *email {
+		if err := local.EditEmailList(); err != nil {
+			fmt.Println(err)
+			return
+		}
+		return
+	}
+	if *ansibleCfg {
+		if err := local.EditAnsibleCfg(); err != nil {
+			fmt.Println(err)
+			return
+		}
+		return
+	}
+	if *ansibleInv {
+		if err := local.EditAnsibleInventory(); err != nil {
+			fmt.Println(err)
+			return
+		}
+		return
+	}
+	if *spp {
+		if err := local.EditSendProfilePlaybook(); err != nil {
+			fmt.Println(err)
+			return
+		}
+		return
+	}
+	if *dpp {
+		if err := local.EditDeployPlaybook(); err != nil {
+			fmt.Println(err)
+			return
+		}
+		return
+	}
+	if *sendgrid {
+		if err := local.EditSendgridAPI(); err != nil {
+			fmt.Println(err)
+			return
+		}
+		return
+	}
+
 	if *sshMode {
 		if !*skipTermCheck && !local.TermCheck() {
 			return
@@ -84,11 +134,13 @@ func runTUIMode() {
 
 func initSetup() {
 	initDone := false
-	cfgDir, err := os.UserConfigDir()
+	/*cfgDir, err := os.UserConfigDir()
 	if err != nil {
 		fmt.Println("Failed to get user config dir:", err)
 		return
-	}
+	}*/
+
+	cfgDir := local.GlobalUserCfgDir
 
 	baseCfgPath := filepath.Join(cfgDir, "tufwgo")
 	authController := filepath.Join(baseCfgPath, "authorised_controllers.json")
@@ -108,6 +160,8 @@ func initSetup() {
 	varDir := filepath.Join(baseCfgPath, "vars")
 	sgEnv := filepath.Join(varDir, "sendgrid.env")
 	auditKeyEnv := filepath.Join(varDir, "auditkey.env")
+
+	var err error
 
 	if _, err = os.Stat(baseCfgPath); err != nil {
 		fmt.Println("TUFWGo config not found, creating config folder...")
