@@ -1,6 +1,7 @@
 package audit
 
 import (
+	"TUFWGo/system/local"
 	"encoding/base64"
 	"errors"
 	"fmt"
@@ -27,10 +28,11 @@ func loadAuditKey() ([]byte, error) {
 }
 
 func OpenDailyAuditLog() (*Log, error) {
-	cfgDir, err := os.UserConfigDir()
+	/*cfgDir, err := os.UserConfigDir()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get user config dir: %w", err)
-	}
+	}*/
+	cfgDir := local.GlobalUserCfgDir
 	auditDir := filepath.Join(cfgDir, "tufwgo", "audit")
 	logPath := filepath.Join(auditDir, time.Now().UTC().Format("audit-2006-01-02.log"))
 	key, err := loadAuditKey()

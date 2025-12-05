@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"regexp"
 	"strings"
 	"time"
@@ -75,13 +76,6 @@ func CommandLiveOutput(command string) error {
 	return cmd.Run()
 }
 
-func RequireRoot() {
-	if os.Geteuid() != 0 {
-		fmt.Println("This command requires root/sudo privileges! (try: sudo " + os.Args[0] + ")")
-		os.Exit(77)
-	}
-}
-
 func DownloadFile(url, dest, expectedSHA256 string) error {
 	response, err := http.Get(url)
 	if err != nil {
@@ -93,7 +87,15 @@ func DownloadFile(url, dest, expectedSHA256 string) error {
 		return fmt.Errorf("failed to download file: received status code %d", response.StatusCode)
 	}
 
-	tmpDir, _ := os.UserHomeDir()
+	var tmpDir string
+	isUsrDir := strings.Contains(dest, "/usr/bin/")
+	if isUsrDir {
+		tmpDir = filepath.Dir(dest)
+
+	} else {
+		tmpDir = GlobalUserHomeDir
+	}
+
 	tmpFile, err := os.CreateTemp(tmpDir, "download-*")
 	if err != nil {
 		return fmt.Errorf("error creating temporary file: %s", err)
