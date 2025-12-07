@@ -94,19 +94,18 @@ func EditDeployPlaybook() error {
 	return nil
 }
 
-func EditSendgridAPI() error {
-	sgEnv := filepath.Join(varDir, "sendgrid.env")
-	if _, err := os.Stat(sgEnv); err != nil {
-		return fmt.Errorf("unable to find deploy_profile playbook, run application normally (without flags) to redownload")
+func EditMailersendAPI() error {
+	msEnv := filepath.Join(varDir, "mailersend.env")
+	if _, err := os.Stat(msEnv); err != nil {
+		return fmt.Errorf("unable to find mailersend.env file, run application normally (without flags) to redownload")
 	}
 
-	if err := newEditor(sgEnv); err != nil {
+	if err := newEditor(msEnv); err != nil {
 		return fmt.Errorf("failed to open editor: %w", err)
 	}
 
-	if err := godotenv.Load(sgEnv); err != nil {
+	if err := godotenv.Load(msEnv); err != nil {
 		return fmt.Errorf("failed to load env vars: %w", err)
 	}
-	fmt.Println(os.Getenv("SENDGRID_API_KEY"))
 	return nil
 }
