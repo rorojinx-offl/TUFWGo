@@ -9,8 +9,6 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 )
 
-//var SSHActive = false
-
 func RunTUI() {
 	tabs := []string{"General", "IPv6 Rules", "Profile Management", "Settings"}
 	var withSSH []string
@@ -35,6 +33,7 @@ func RunTUI() {
 	auditor, err := audit.OpenDailyAuditLog()
 	if err != nil {
 		fmt.Println(err)
+		return
 	}
 	m.SetAuditor(auditor, getActor())
 	audit.SetGlobalAuditor(auditor, getActor())
