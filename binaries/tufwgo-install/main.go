@@ -38,6 +38,8 @@ func main() {
 
 	response, err := http.Get("https://dl.tufwgo.store/binaries/tufwgo")
 	if err != nil {
+		fmt.Printf("error downloading file: %s", err)
+		return
 	}
 	defer response.Body.Close()
 
@@ -48,7 +50,8 @@ func main() {
 
 	destFile, err := os.Create(dest)
 	if err != nil {
-		fmt.Println("")
+		fmt.Println("Error creating file:", err)
+		return
 	}
 
 	var bar *progressbar.ProgressBar
