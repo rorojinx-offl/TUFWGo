@@ -25,7 +25,7 @@ var ansibleConfig = flag.Bool("ansible-config", false, "Edit Ansible config")
 var ansibleInv = flag.Bool("ansible-inv", false, "Edit Ansible inventory")
 var spp = flag.Bool("ansible-sppb", false, "Edit the send_profile Ansible playbook")
 var dpp = flag.Bool("ansible-dppb", false, "Edit the deploy_profile Ansible playbook")
-var sendgrid = flag.Bool("sendgrid", false, "Add/Edit SendGrid Email API Key")
+var mailersend = flag.Bool("mailersend", false, "Add/Edit MailerSend Email API Key")
 var help = flag.Bool("help", false, "Show help")
 var emailTest = flag.Bool("emailtest", false, "Test if emailing works")
 
@@ -68,8 +68,8 @@ func runTUIMode() {
 		}
 		return
 	}
-	if *sendgrid {
-		if err := local.EditSendgridAPI(); err != nil {
+	if *mailersend {
+		if err := local.EditMailersendAPI(); err != nil {
 			fmt.Println(err)
 			return
 		}
@@ -158,7 +158,7 @@ func InitSetup() {
 	deployPlaybook := filepath.Join(playbooksDir, "deploy_profile.yml")
 	auditDir := filepath.Join(baseCfgPath, "audit")
 	varDir := filepath.Join(baseCfgPath, "vars")
-	sgEnv := filepath.Join(varDir, "sendgrid.env")
+	msEnv := filepath.Join(varDir, "mailersend.env")
 	auditKeyEnv := filepath.Join(varDir, "auditkey.env")
 
 	var err error
@@ -185,7 +185,7 @@ func InitSetup() {
 
 	if _, err = os.Stat(emailList); err != nil {
 		fmt.Println("Email list file not found, downloading...")
-		err = local.DownloadFile("https://txrijwxmwfoempqmsuva.supabase.co/storage/v1/object/public/misc/emails.txt", emailList, "8922be73ea4f18847da317ff1373b71ad2f16a963c131e7b420c8a0199c95277")
+		err = local.DownloadFile("https://dl.tufwgo.store/misc/emails.txt", emailList, "8922be73ea4f18847da317ff1373b71ad2f16a963c131e7b420c8a0199c95277")
 		if err != nil {
 			fmt.Println("Failed to download email list file:", err)
 			return
@@ -215,7 +215,7 @@ func InitSetup() {
 
 	if _, err = os.Stat(pdcBin); err != nil {
 		fmt.Println("PDC binary not found, downloading...")
-		err = local.DownloadFile("https://txrijwxmwfoempqmsuva.supabase.co/storage/v1/object/public/deploy%20binary/tufwgo-deploy", pdcBin, "2cc0d076b24b354fcb451e94d5b6aaf040f267719d6926426a2b7c462d96ea97")
+		err = local.DownloadFile("https://dl.tufwgo.store/binaries/tufwgo-deploy", pdcBin, "2cc0d076b24b354fcb451e94d5b6aaf040f267719d6926426a2b7c462d96ea97")
 		if err != nil {
 			fmt.Println("Failed to download PDC binary:", err)
 			return
@@ -235,7 +235,7 @@ func InitSetup() {
 
 	if _, err = os.Stat(authBin); err != nil {
 		fmt.Println("Auth binary not found at /usr/bin/tufwgo-auth, downloading...")
-		err = local.DownloadFile("https://txrijwxmwfoempqmsuva.supabase.co/storage/v1/object/public/deploy%20binary/tufwgo-auth", authBin, "15361a36a6b533e990cbbb99c631dc2a645bfe553a4e25226a2b8a40c4b5c6b9")
+		err = local.DownloadFile("https://dl.tufwgo.store/binaries/tufwgo-auth", authBin, "15361a36a6b533e990cbbb99c631dc2a645bfe553a4e25226a2b8a40c4b5c6b9")
 		if err != nil {
 			fmt.Println("Failed to download auth binary:", err)
 			return
@@ -255,7 +255,7 @@ func InitSetup() {
 
 	if _, err = os.Stat(infraInventory); err != nil {
 		fmt.Println("Ansible inventory file not found, downloading...")
-		err = local.DownloadFile("https://txrijwxmwfoempqmsuva.supabase.co/storage/v1/object/public/deploy%20infra/inventory.ini", infraInventory, "25b8c96e713334c8717656369e25de8dc86841f7af85571dd4f8887d350dde7e")
+		err = local.DownloadFile("https://dl.tufwgo.store/infra/inventory.ini", infraInventory, "25b8c96e713334c8717656369e25de8dc86841f7af85571dd4f8887d350dde7e")
 		if err != nil {
 			fmt.Println("Failed to download Ansible inventory file:", err)
 			return
@@ -265,7 +265,7 @@ func InitSetup() {
 
 	if _, err = os.Stat(ansibleCfg); err != nil {
 		fmt.Println("Ansible config file not found, downloading...")
-		err = local.DownloadFile("https://txrijwxmwfoempqmsuva.supabase.co/storage/v1/object/public/deploy%20infra/ansible.cfg", ansibleCfg, "bc25eb04b07fa67e6d13e7265fd26f49ba2080c70b10ba7d19da3a7fefdc22a8")
+		err = local.DownloadFile("https://dl.tufwgo.store/infra/ansible.cfg", ansibleCfg, "bc25eb04b07fa67e6d13e7265fd26f49ba2080c70b10ba7d19da3a7fefdc22a8")
 		if err != nil {
 			fmt.Println("Failed to download Ansible config file:", err)
 			return
@@ -285,7 +285,7 @@ func InitSetup() {
 
 	if _, err = os.Stat(sendPlaybook); err != nil {
 		fmt.Println("Profile flight playbook not found, downloading...")
-		err = local.DownloadFile("https://txrijwxmwfoempqmsuva.supabase.co/storage/v1/object/public/deploy%20infra/playbooks/send_profile.yml", sendPlaybook, "658de44a4212e55569c6f540274f890c66796145da2c22ab20796cfe98ee4691")
+		err = local.DownloadFile("https://dl.tufwgo.store/infra/playbooks/send_profile.yml", sendPlaybook, "658de44a4212e55569c6f540274f890c66796145da2c22ab20796cfe98ee4691")
 		if err != nil {
 			fmt.Println("Failed to download profile flight playbook:", err)
 			return
@@ -295,7 +295,7 @@ func InitSetup() {
 
 	if _, err = os.Stat(deployPlaybook); err != nil {
 		fmt.Println("Profile deployment playbook not found, downloading...")
-		err = local.DownloadFile("https://txrijwxmwfoempqmsuva.supabase.co/storage/v1/object/public/deploy%20infra/playbooks/deploy_profile.yml", deployPlaybook, "35d2bdc976f1ad5dc79d1975bfd952b0c5be723bbe45734245c9f05c8b64576e")
+		err = local.DownloadFile("https://dl.tufwgo.store/infra/playbooks/deploy_profile.yml", deployPlaybook, "35d2bdc976f1ad5dc79d1975bfd952b0c5be723bbe45734245c9f05c8b64576e")
 		if err != nil {
 			fmt.Println("Failed to download profile deployment playbook:", err)
 			return
@@ -323,19 +323,19 @@ func InitSetup() {
 		fmt.Printf("Environment Variables directory created at %s\n\n", varDir)
 	}
 
-	if _, err = os.Stat(sgEnv); err != nil {
+	if _, err = os.Stat(msEnv); err != nil {
 		fmt.Println("SendGrid environment file not found, downloading...")
-		err = local.DownloadFile("https://txrijwxmwfoempqmsuva.supabase.co/storage/v1/object/public/deploy%20vars/sendgrid.env", sgEnv, "e2958fbc972727a63920aec234977775dd947ad660a4cdcc81c50466a76643af")
+		err = local.DownloadFile("https://dl.tufwgo.store/vars/mailersend.env", msEnv, "865b3acad81f3ae55d5763d94b434b3674ae49bb1c75dda5fe270bc06a4bb1f8")
 		if err != nil {
 			fmt.Println("Failed to download SendGrid environment file:", err)
 			return
 		}
-		fmt.Printf("SendGrid environment file downloaded at %s\n\n", sgEnv)
+		fmt.Printf("SendGrid environment file downloaded at %s\n\n", msEnv)
 	}
 
 	if _, err = os.Stat(auditKeyEnv); err != nil {
 		fmt.Println("Audit key environment file not found, downloading...")
-		err = local.DownloadFile("https://txrijwxmwfoempqmsuva.supabase.co/storage/v1/object/public/deploy%20vars/auditkey.env", auditKeyEnv, "c20b42e3705265b35ae46c9d27714572eb0f8b0229eed2f3b68f072871bdc895")
+		err = local.DownloadFile("https://dl.tufwgo.store/vars/auditkey.env", auditKeyEnv, "c20b42e3705265b35ae46c9d27714572eb0f8b0229eed2f3b68f072871bdc895")
 		if err != nil {
 			fmt.Println("Failed to download audit key environment file:", err)
 			return
@@ -362,17 +362,17 @@ func InitSetup() {
 		return
 	}
 
-	err = godotenv.Load(sgEnv)
+	err = godotenv.Load(msEnv)
 	if err != nil {
 		fmt.Println("Failed to load SendGrid env file:", err)
 		return
 	}
-	if os.Getenv("SENDGRID_API_KEY") == "" {
-		fmt.Print("SENDGRID_API_KEY not set in sendgrid.env. Please edit the file and add your SendGrid API key to enable email notifications.\n\n")
+	if os.Getenv("MAILERSEND_API_KEY") == "" {
+		fmt.Print("$MAILERSEND_API_KEY not set in mailersend.env. Please edit the file and add your MailerSend API key to enable email notifications.\n\n")
 	} else {
-		err = godotenv.Load(sgEnv)
+		err = godotenv.Load(msEnv)
 		if err != nil {
-			fmt.Println("Failed to load SendGrid API key:", err)
+			fmt.Println("Failed to load MailerSend API key:", err)
 			return
 		}
 		initDone = true
@@ -436,8 +436,8 @@ func copilotSetup() {
 }
 
 func testEmail() error {
-	if os.Getenv("SENDGRID_API_KEY") == "" {
-		return errors.New("unable to find sendgrid API key")
+	if os.Getenv("MAILERSEND_API_KEY") == "" {
+		return errors.New("unable to find MailerSend API key")
 	}
 
 	var rule *ufw.Form
