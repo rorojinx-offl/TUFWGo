@@ -94,6 +94,18 @@ func RunTUIMode() {
 	}
 
 	initSetup()
+	signal, err := checkUpdates()
+	if err != nil {
+		fmt.Println(err)
+		fmt.Println("FATAL ERROR: Failed to check for updates. You cannot continue using TUFWGo without being fully updated - this is for your security!")
+		os.Exit(1)
+	}
+	if signal != "0" {
+		fmt.Println(signal)
+		fmt.Println("Run \"sudo tufwgo-update\" to perform updates. You must update TUFWGo to continue using it!")
+		os.Exit(0)
+	}
+	fmt.Println("TUFWGo is up to date!")
 
 	if *sshMode {
 		if !*skipTermCheck && !local.TermCheck() {
