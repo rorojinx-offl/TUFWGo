@@ -3,6 +3,7 @@ package system
 import (
 	"TUFWGo/alert"
 	"TUFWGo/auth"
+	"TUFWGo/binaries"
 	"TUFWGo/system/local"
 	"TUFWGo/system/ssh"
 	"TUFWGo/tui"
@@ -28,8 +29,9 @@ var dpp = flag.Bool("ansible-dppb", false, "Edit the deploy_profile Ansible play
 var mailersend = flag.Bool("mailersend", false, "Add/Edit MailerSend Email API Key")
 var help = flag.Bool("help", false, "Show help")
 var emailTest = flag.Bool("emailtest", false, "Test if emailing works")
+var version = flag.Bool("version", false, "Show version")
 
-func runTUIMode() {
+func RunTUIMode() {
 	flag.Parse()
 	local.InitPaths()
 
@@ -86,6 +88,12 @@ func runTUIMode() {
 		}
 		return
 	}
+	if *version {
+		fmt.Println(binaries.FormatVersion())
+		return
+	}
+
+	initSetup()
 
 	if *sshMode {
 		if !*skipTermCheck && !local.TermCheck() {
@@ -138,7 +146,7 @@ func runTUIMode() {
 	tui.RunTUI()
 }
 
-func InitSetup() {
+func initSetup() {
 	initDone := false
 	cfgDir := local.GlobalUserCfgDir
 
@@ -382,7 +390,7 @@ func InitSetup() {
 		fmt.Println("Initial setup completed.")
 	}
 
-	runTUIMode()
+	//runTUIMode()
 }
 
 func copilotSetup() {

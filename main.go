@@ -7,7 +7,7 @@ import (
 
 func main() {
 	local.RequireRoot()
-	system.InitSetup()
+	system.RunTUIMode()
 	/*err := copilot.RunOllama()
 	if err != nil {
 		fmt.Println("Failed to run copilot:", err)
