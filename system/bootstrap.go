@@ -89,7 +89,7 @@ func RunTUIMode() {
 		return
 	}
 	if *version {
-		fmt.Println(binaries.FormatVersion())
+		fmt.Printf(binaries.Version)
 		return
 	}
 
