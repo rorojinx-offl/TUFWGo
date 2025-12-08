@@ -33,7 +33,6 @@ func OpenDailyAuditLog() (*Log, error) {
 		return nil, fmt.Errorf("failed to get user config dir: %w", err)
 	}*/
 	cfgDir := local.GlobalUserCfgDir
-	fmt.Printf("Loading audit log from %s\n", cfgDir)
 	auditDir := filepath.Join(cfgDir, "tufwgo", "audit")
 	logPath := filepath.Join(auditDir, time.Now().UTC().Format("audit-2006-01-02.log"))
 	key, err := loadAuditKey()
