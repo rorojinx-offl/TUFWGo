@@ -11,11 +11,12 @@ const (
 	PACMAN  PackageManager = "pacman"
 	ZYPPER  PackageManager = "zypper"
 	NIX     PackageManager = "nix"
+	APK     PackageManager = "apk"
 	UNKNOWN PackageManager = "unknown"
 )
 
 func DetectPkgMgr() PackageManager {
-	list := []PackageManager{APT, DNF, YUM, PACMAN, ZYPPER, NIX}
+	list := []PackageManager{APT, DNF, YUM, PACMAN, ZYPPER, NIX, APK}
 	for _, m := range list {
 		if _, err := exec.LookPath(string(m)); err != nil {
 			continue
