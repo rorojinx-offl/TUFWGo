@@ -18,8 +18,9 @@ func DetectPkgMgr() PackageManager {
 	list := []PackageManager{APT, DNF, YUM, PACMAN, ZYPPER, NIX}
 	for _, m := range list {
 		if _, err := exec.LookPath(string(m)); err != nil {
-			return m
+			continue
 		}
+		return m
 	}
 	return UNKNOWN
 }
