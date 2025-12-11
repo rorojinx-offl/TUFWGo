@@ -14,6 +14,7 @@ import (
 	"os/exec"
 	"os/user"
 	"path/filepath"
+	"syscall"
 
 	"github.com/schollz/progressbar/v3"
 )
@@ -66,7 +67,17 @@ func main() {
 		return
 	}
 
-	//needUpdate, err := manifest.selfCheck()
+	needSelfUpdate, err := manifest.selfCheck()
+	if err != nil {
+		fmt.Println("Error checking if self update is required", err)
+	}
+	if needSelfUpdate {
+		err = manifest.selfUpdate()
+		if err != nil {
+			fmt.Println("Error self updating", err)
+		}
+	}
+	fmt.Println("TUFWGo Updater is already up to date!")
 
 	if err = manifest.checkMain(); err != nil {
 		fmt.Println(err)
@@ -90,12 +101,12 @@ func main() {
 func (manifest *Manifest) fetchManifest() error {
 	response, err := http.Get("https://dl.tufwgo.store/manifest.json")
 	if err != nil {
-		return fmt.Errorf("error downloading the file: %w", err)
+		return fmt.Errorf("error fetching the manifest: %w", err)
 	}
 	defer response.Body.Close()
 
 	if response.StatusCode != http.StatusOK {
-		return fmt.Errorf("failed to download manifest: received status code %d", response.StatusCode)
+		return fmt.Errorf("failed to fetch manifest: received status code %d", response.StatusCode)
 	}
 
 	dec := json.NewDecoder(response.Body)
@@ -201,6 +212,21 @@ func getVersion() (string, error) {
 	}
 
 	return string(output), nil
+}
+
+func reexecSelf() error {
+	selfPath, err := os.Executable()
+	if err != nil {
+		return err
+	}
+
+	selfPath, err = filepath.EvalSymlinks(selfPath)
+	if err != nil {
+		return err
+	}
+
+	//Replace current process image with the new one on disk
+	return syscall.Exec(selfPath, os.Args, os.Environ())
 }
 
 func (manifest *Manifest) checkMain() error {
@@ -391,4 +417,23 @@ func (manifest *Manifest) justCheck() (int, error) {
 		count++
 	}
 	return count, nil
+}
+
+func (manifest *Manifest) selfUpdate() error {
+	path := "/usr/bin/tufwgo-update"
+	expectedSHA256 := manifest.Binaries["tufwgo-update"].SHA256
+	url := manifest.Binaries["tufwgo-update"].URL
+
+	err := downloadFile(path, expectedSHA256, url)
+	if err != nil {
+		return err
+	}
+
+	fmt.Println("Restarting TUFWGo Updater...")
+
+	err = reexecSelf()
+	if err != nil {
+		return err
+	}
+	return nil
 }
