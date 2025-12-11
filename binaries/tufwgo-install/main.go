@@ -1,15 +1,16 @@
 package main
 
 import (
+	"TUFWGo/system/local"
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"github.com/schollz/progressbar/v3"
 	"io"
 	"net/http"
 	"os"
-
-	"github.com/schollz/progressbar/v3"
 )
 
 type Manifest struct {
@@ -33,55 +34,70 @@ func main() {
 		return
 	}
 
-	dest := "/usr/bin/tufwgo"
-	expectedSHA256 := manifest.Binaries["tufwgo"].SHA256
+	var path, expectedSHA256, url string
 
-	response, err := http.Get("https://dl.tufwgo.store/binaries/tufwgo")
-	if err != nil {
-		fmt.Printf("error downloading file: %s", err)
-		return
-	}
-	defer response.Body.Close()
-
-	if response.StatusCode != http.StatusOK {
-		fmt.Printf("failed to download file: received status code %d", response.StatusCode)
-		return
-	}
-
-	destFile, err := os.Create(dest)
-	if err != nil {
-		fmt.Println("Error creating file:", err)
-		return
-	}
-
-	var bar *progressbar.ProgressBar
-	if response.ContentLength <= 0 {
-		bar = progressbar.NewOptions64(-1, progressbar.OptionSetDescription("downloading"),
-			progressbar.OptionShowBytes(true),
-			progressbar.OptionClearOnFinish())
+	path = "/usr/bin/tufwgo"
+	expectedSHA256 = manifest.Binaries["tufwgo"].SHA256
+	url = manifest.Binaries["tufwgo"].URL
+	if _, err = os.Stat(path); err != nil {
+		if errors.Is(err, os.ErrNotExist) {
+			fmt.Println("Installing TUFWGo...")
+			err = downloadFile(path, expectedSHA256, url)
+			if err != nil {
+				fmt.Println(err)
+				return
+			}
+		} else {
+			fmt.Println(err)
+			return
+		}
 	} else {
-		bar = progressbar.DefaultBytes(response.ContentLength, "downloading")
+		fmt.Println("TUFWGO is already installed")
 	}
 
-	h := sha256.New()
-	mw := io.MultiWriter(destFile, h, bar)
-	if _, err = io.Copy(mw, response.Body); err != nil {
-		fmt.Printf("error saving file: %s", err)
-		return
+	path = "/usr/bin/tufwgo-update"
+	expectedSHA256 = manifest.Binaries["tufwgo-update"].SHA256
+	url = manifest.Binaries["tufwgo-update"].URL
+	if _, err = os.Stat(path); err != nil {
+		if errors.Is(err, os.ErrNotExist) {
+			fmt.Println("Installing TUFWGo Updater...")
+			err = downloadFile(path, expectedSHA256, url)
+			if err != nil {
+				fmt.Println(err)
+				return
+			}
+		} else {
+			fmt.Println(err)
+			return
+		}
+	} else {
+		fmt.Println("TUFWGO Updater is already installed")
 	}
-	_ = destFile.Close()
-	_ = bar.Finish()
 
-	gotHash := hex.EncodeToString(h.Sum(nil))
-	if expectedSHA256 != "" && gotHash != expectedSHA256 {
-		fmt.Printf("expected SHA256: %s, got SHA256: %s", expectedSHA256, gotHash)
+	pkg, err := getPkgMr()
+	if err != nil {
+		fmt.Println(err)
 		return
 	}
 
-	if err = os.Chmod(dest, 0755); err != nil {
-		fmt.Printf("error setting file permissions: %s", err)
+	deps, err := local.FindDependencies()
+	if err != nil {
+		fmt.Println(err)
+	}
+	if len(deps) == 0 {
+		fmt.Println("You already have all the dependencies installed!!!")
 		return
 	}
+	errs := local.InstallDependencies(deps, local.DerivePkgMgrKeywords(pkg))
+	if len(errs) != 0 {
+		for _, err = range errs {
+			fmt.Println(err)
+		}
+		fmt.Println("Dependencies installed with some errors!")
+		return
+	}
+	fmt.Println("Dependencies installed successfully!")
+
 }
 
 func (manifest *Manifest) fetchManifest() error {
@@ -108,4 +124,58 @@ func requireRoot() {
 		fmt.Println("This command requires root/sudo privileges! (try: sudo " + os.Args[0] + ")")
 		os.Exit(77)
 	}
+}
+
+func downloadFile(dest, expectedSHA256, url string) error {
+	response, err := http.Get(url)
+	if err != nil {
+		return fmt.Errorf("error downloading file: %w", err)
+	}
+	defer response.Body.Close()
+
+	if response.StatusCode != http.StatusOK {
+		return fmt.Errorf("failed to download file: received status code %d", response.StatusCode)
+	}
+
+	destFile, err := os.Create(dest)
+	if err != nil {
+		return fmt.Errorf("error creating file: %w", err)
+	}
+
+	var bar *progressbar.ProgressBar
+	if response.ContentLength <= 0 {
+		bar = progressbar.NewOptions64(-1, progressbar.OptionSetDescription("downloading"),
+			progressbar.OptionShowBytes(true),
+			progressbar.OptionClearOnFinish())
+	} else {
+		bar = progressbar.DefaultBytes(response.ContentLength, "downloading")
+	}
+
+	h := sha256.New()
+	mw := io.MultiWriter(destFile, h, bar)
+	if _, err = io.Copy(mw, response.Body); err != nil {
+		return fmt.Errorf("error saving file: %w", err)
+	}
+	_ = destFile.Close()
+	_ = bar.Finish()
+
+	gotHash := hex.EncodeToString(h.Sum(nil))
+	if expectedSHA256 != "" && gotHash != expectedSHA256 {
+		return fmt.Errorf("expected SHA256: %s, got SHA256: %s", expectedSHA256, gotHash)
+	}
+
+	if err = os.Chmod(dest, 0755); err != nil {
+		return fmt.Errorf("error setting file permissions: %w", err)
+	}
+
+	return nil
+}
+
+func getPkgMr() (string, error) {
+	pkg := local.DetectPkgMgr()
+	if pkg == local.UNKNOWN {
+		return "", errors.New("could not detect package manager")
+	}
+
+	return string(pkg), nil
 }
