@@ -8,12 +8,14 @@ import (
 	"TUFWGo/system/ssh"
 	"TUFWGo/tui"
 	"TUFWGo/ufw"
+	"bufio"
 	"errors"
 	"flag"
 	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 
 	"github.com/joho/godotenv"
 )
@@ -182,6 +184,11 @@ func initSetup() {
 	auditKeyEnv := filepath.Join(varDir, "auditkey.env")
 
 	var err error
+
+	if err = ufwCheck(); err != nil {
+		fmt.Println(err)
+		os.Exit(3)
+	}
 
 	if _, err = os.Stat(baseCfgPath); err != nil {
 		fmt.Println("TUFWGo config not found, creating config folder...")
@@ -479,4 +486,61 @@ func testEmail() error {
 	emailInfo := alert.EmailInfo{}
 	emailInfo.SendMail("Test Email Sent", "tufwgo -emailtest", rule)
 	return nil
+}
+
+func ufwCheck() error {
+	pkg, err := getPkgMr()
+	if err != nil {
+		return err
+	}
+
+	if _, err = exec.LookPath("ufw"); err != nil {
+		if errors.Is(err, exec.ErrNotFound) {
+			reader := bufio.NewReader(os.Stdin)
+
+			fmt.Println("UFW is not installed on this system, it is required to run this program!")
+			ufwConf := readLine(reader, "Do you want to install UFW? (y/N) ")
+			if ufwConf == "N" || ufwConf == "n" || ufwConf == "" || ufwConf == "\n" {
+				return fmt.Errorf("cannot open application without UFW")
+			}
+
+			pkgMgrKwd := local.DerivePkgMgrKeywords(pkg)
+			if pkgMgrKwd == "" {
+				return fmt.Errorf("error finding package manager keywords")
+			}
+			err = local.CommandLiveOutput(fmt.Sprintf("%s ufw", pkgMgrKwd))
+			if err != nil {
+				return err
+			}
+
+			err = local.ReexecSelf()
+			if err != nil {
+				return fmt.Errorf("error re-executing tufwgo: %w", err)
+			}
+			return nil
+		} else {
+			return fmt.Errorf("unable to find ufw: %w", err)
+		}
+	}
+
+	if err = local.CheckDaemon("ufw"); err != nil {
+		return fmt.Errorf("UFW is installed but there is a problem with the daemon: %w", err)
+	}
+
+	return nil
+}
+
+func getPkgMr() (string, error) {
+	pkg := local.DetectPkgMgr()
+	if pkg == local.UNKNOWN {
+		return "", errors.New("could not detect package manager")
+	}
+
+	return string(pkg), nil
+}
+
+func readLine(reader *bufio.Reader, prompt string) string {
+	fmt.Print(prompt)
+	text, _ := reader.ReadString('\n')
+	return strings.TrimSpace(text)
 }
