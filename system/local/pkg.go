@@ -1,6 +1,8 @@
 package local
 
-import "os/exec"
+import (
+	"os/exec"
+)
 
 type PackageManager string
 
