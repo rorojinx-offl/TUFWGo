@@ -187,6 +187,6 @@ func CheckDaemon(daemonName string) error {
 	if isActive && isEnabled && !isFailed {
 		return nil
 	} else {
-		return fmt.Errorf("%s is not running", daemonName)
+		return fmt.Errorf("%s daemon is not running", daemonName)
 	}
 }
