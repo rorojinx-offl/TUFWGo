@@ -1,41 +1,15 @@
 package copilot
 
 import (
+	"TUFWGo/system/local"
 	"bytes"
-	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io/ioutil"
 	"net/http"
 	"time"
-
-	"github.com/taigrr/systemctl"
 )
 
-func checkOllamaDaemon() error {
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
-	isActive, err := systemctl.IsActive(ctx, "ollama", systemctl.Options{UserMode: false})
-	if err != nil {
-		return err
-	}
-	isEnabled, err := systemctl.IsEnabled(ctx, "ollama", systemctl.Options{UserMode: false})
-	if err != nil {
-		return err
-	}
-	isFailed, err := systemctl.IsFailed(ctx, "ollama", systemctl.Options{UserMode: false})
-	if err != nil {
-		return err
-	}
-
-	if isActive && isEnabled && !isFailed {
-		return nil
-	} else {
-		return errors.New("ollama is not running")
-	}
-}
 func ollamaPull(baseURL, name string, timeout time.Duration) error {
 	body := map[string]any{"name": name, "stream": false}
 	b, _ := json.Marshal(body)
@@ -56,7 +30,7 @@ func ollamaPull(baseURL, name string, timeout time.Duration) error {
 }
 
 func RunOllama() error {
-	if err := checkOllamaDaemon(); err != nil {
+	if err := local.CheckDaemon("ollama"); err != nil {
 		return err
 	}
 	if err := ollamaPull("http://localhost:11434", "rorojinx/tufwgo-slm", 5*time.Minute); err != nil {
