@@ -456,6 +456,11 @@ func copilotSetup() {
 }
 
 func testEmail() error {
+	err := godotenv.Load(filepath.Join(local.GlobalUserCfgDir, "tufwgo/vars/mailersend.env"))
+	if err != nil {
+		return fmt.Errorf("error loading .env file: %w", err)
+	}
+
 	if os.Getenv("MAILERSEND_API_KEY") == "" {
 		return errors.New("unable to find MailerSend API key")
 	}
