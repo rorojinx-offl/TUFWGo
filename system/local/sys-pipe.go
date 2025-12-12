@@ -14,9 +14,11 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
+	"syscall"
 	"time"
 
 	"github.com/schollz/progressbar/v3"
+	"github.com/taigrr/systemctl"
 )
 
 func prepareCommand(cmdStr string) (string, error) {
@@ -148,4 +150,43 @@ func EditEnv(path, key, value string) error {
 		return fmt.Errorf("error writing env file: %s", err)
 	}
 	return nil
+}
+
+func ReexecSelf() error {
+	selfPath, err := os.Executable()
+	if err != nil {
+		return err
+	}
+
+	selfPath, err = filepath.EvalSymlinks(selfPath)
+	if err != nil {
+		return err
+	}
+
+	//Replace current process image with the new one on disk
+	return syscall.Exec(selfPath, os.Args, os.Environ())
+}
+
+func CheckDaemon(daemonName string) error {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	isActive, err := systemctl.IsActive(ctx, daemonName, systemctl.Options{UserMode: false})
+	if err != nil {
+		return err
+	}
+	isEnabled, err := systemctl.IsEnabled(ctx, daemonName, systemctl.Options{UserMode: false})
+	if err != nil {
+		return err
+	}
+	isFailed, err := systemctl.IsFailed(ctx, daemonName, systemctl.Options{UserMode: false})
+	if err != nil {
+		return err
+	}
+
+	if isActive && isEnabled && !isFailed {
+		return nil
+	} else {
+		return fmt.Errorf("%s is not running", daemonName)
+	}
 }
