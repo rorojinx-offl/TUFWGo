@@ -248,7 +248,7 @@ func (manifest *Manifest) checkMain() error {
 		return fmt.Errorf("unable to get version for TUFWGo: %w", err)
 	}
 
-	if (gotHash == expectedSHA256) || (vr == manifest.Version) {
+	if (gotHash == expectedSHA256) && (vr == manifest.Version) {
 		return fmt.Errorf("TUFWGo is already up to date")
 	}
 
@@ -371,7 +371,7 @@ func (manifest *Manifest) justCheck() (int, error) {
 	if err != nil {
 		return -1, fmt.Errorf("unable to get version for TUFWGo: %w", err)
 	}
-	if (gotHash != expectedSHA256) || (vr != manifest.Version) {
+	if (gotHash != expectedSHA256) && (vr != manifest.Version) {
 		count++
 	}
 
