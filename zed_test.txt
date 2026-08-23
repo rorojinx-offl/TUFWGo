@@ -1,1 +1,2 @@
 Hello from Zed!
+Test Git from Zed.
