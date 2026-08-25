@@ -32,3 +32,4 @@ go.work.sum
 # .vscode/
 sendgrid.env
 AGENTS.md
+manifests/
