@@ -1,2 +1,3 @@
 Hello from Zed!
 Test Git from Zed.
+Test Git and Zed from WSL
